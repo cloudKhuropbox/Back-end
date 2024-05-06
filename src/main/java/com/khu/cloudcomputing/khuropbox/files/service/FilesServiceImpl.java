@@ -47,11 +47,11 @@ public class FilesServiceImpl implements FilesService {
     private String bucket;
     @Override
     public FilesInformationDTO findById(Integer id) {//id를 이용하여 찾는 메서드
-        return new FilesInformationDTO(filesRepository.findById(id).orElse(new Files()));
+        return new FilesInformationDTO(filesRepository.findById(id).orElseThrow());
     }
     @Override
     public String findLinkById(Integer id){
-        return filesRepository.findById(id).orElse(new Files()).getFileLink();
+        return filesRepository.findById(id).orElseThrow().getFileLink();
     }
     @Override
     public List<FilesInformationDTO> findAll() {//모든 파일을 찾는 메서드, 추후 user객체가 연계되면 바꿀 예정
