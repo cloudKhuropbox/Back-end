@@ -1,12 +1,11 @@
 package com.khu.cloudcomputing.khuropbox.files.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Builder
@@ -36,4 +35,8 @@ public class Files {
         this.fileLink=fileLink;
         return this;
     }
+
+
+    @OneToMany(mappedBy = "file", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<FileHistoryEntity> fileHistory = new ArrayList<FileHistoryEntity>();
 }

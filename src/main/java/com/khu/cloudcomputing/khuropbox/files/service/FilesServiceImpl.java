@@ -6,10 +6,13 @@ import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.*;
 import com.amazonaws.util.IOUtils;
+import com.khu.cloudcomputing.khuropbox.files.dto.FileHistoryDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesInformationDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesUpdateDTO;
+import com.khu.cloudcomputing.khuropbox.files.entity.FileHistoryEntity;
 import com.khu.cloudcomputing.khuropbox.files.entity.Files;
+import com.khu.cloudcomputing.khuropbox.files.repository.FileHistoryRepository;
 import com.khu.cloudcomputing.khuropbox.files.repository.FilesRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +34,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.springframework.web.servlet.function.RequestPredicates.contentType;
 
@@ -42,6 +46,7 @@ public class FilesServiceImpl implements FilesService {
 
     private final FilesRepository filesRepository;
     private final AmazonS3Client amazonS3Client;
+    private final FileHistoryRepository fileHistoryRepository;
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
@@ -63,10 +68,15 @@ public class FilesServiceImpl implements FilesService {
         return listDTO;
     }
     @Override
-    public void updateFile(FilesUpdateDTO fileUpdate) {//파일이름 갱신 메서드
+    public void updateFile(FilesUpdateDTO fileUpdate, String changeDescription) {//파일이름 갱신 메서드
         Files file = this.filesRepository.findById(fileUpdate.getId()).orElseThrow();
         file.update(fileUpdate.getFileName(), fileUpdate.getFileLink(), LocalDateTime.now());
         this.filesRepository.save(file);
+
+        //변경이력 기록
+        FileHistoryEntity fileHistory = new FileHistoryEntity();
+        fileHistory.updateFileHistory(file, changeDescription);
+        fileHistoryRepository.save(fileHistory);
     }
     @Override
     public void updateLink(Integer id, String fileLink){
@@ -165,5 +175,20 @@ public class FilesServiceImpl implements FilesService {
             case "fileType"->filesRepository.findAllByOrderByFileType().stream().map(FilesInformationDTO::new).toList();
             default -> filesRepository.findAllByOrderByUpdatedAtDesc().stream().map(FilesInformationDTO::new).toList();
         };
+    }
+
+    //파일 히스토리 관리
+    public List<FileHistoryDTO> getFileChangeHistory(Integer id) {
+       List<FileHistoryEntity> fileHistoryEntities = fileHistoryRepository.findAllByOrderByChangeDateDesc(id);
+       Files file = filesRepository.findById(id).orElseThrow();
+
+       return fileHistoryEntities.stream()
+               .map(mapToDTO(file, fileHistoryEntities))
+               .collect(Collectors.toList());
+    }
+
+    @Override
+    public FileHistoryDTO mapToDTO(Files fileEntity,FileHistoryEntity historyEntity) {
+        return new FileHistoryDTO(fileEntity, historyEntity);
     }
 }

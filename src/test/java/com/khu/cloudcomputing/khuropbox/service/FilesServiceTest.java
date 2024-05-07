@@ -54,7 +54,8 @@ class FilesServiceTest {
         //when
         String updatedName="test3";
         FilesUpdateDTO fileUpdate=new FilesUpdateDTO(insertFile, updatedName,"/");
-        filesService.updateFile(fileUpdate);
+        String changeDescription="test4: 이거저거 바꿔봤다";
+        filesService.updateFile(fileUpdate, changeDescription);
         FilesInformationDTO updatedFile=filesService.findById(insertFile);
         //then
         assertEquals(updatedName, updatedFile.getFileName());

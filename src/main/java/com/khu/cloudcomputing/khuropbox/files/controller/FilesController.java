@@ -1,5 +1,6 @@
 package com.khu.cloudcomputing.khuropbox.files.controller;
 
+import com.khu.cloudcomputing.khuropbox.files.dto.FileHistoryDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesInformationDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesUpdateDTO;
@@ -37,10 +38,12 @@ public class FilesController {
         filesService.deleteAtS3(filePath);
         filesService.deleteFile(id);
     }
+    //file description 추가
     @PostMapping("update")
-    public void Update(@RequestBody FilesUpdateDTO fileUpdate){
-        filesService.updateFile(fileUpdate);
+    public void Update(@RequestBody FilesUpdateDTO fileUpdate, @RequestBody String fileDescription){
+        filesService.updateFile(fileUpdate, fileDescription);
     }
+
     @PostMapping("upload")
     public void Upload(@RequestPart(value="fileName") String fileName, @RequestPart(value = "file") MultipartFile multipartFile) {
         String fileLink = "";
@@ -67,5 +70,12 @@ public class FilesController {
         String filePath = filesService.findLinkById(id).substring(51);
         log.info(filePath);
         return filesService.download(filePath);
+    }
+
+    //파일 히스토리 접근
+    @GetMapping("fileHistory/{fileId}")
+    public ResponseEntity<List<FileHistoryDTO>> getFileChangeHistory(@PathVariable Integer fileId) {
+        List<FileHistoryDTO> changeHistory = filesService.getFileChangeHistory(fileId);
+        return ResponseEntity.ok(changeHistory);
     }
 }
