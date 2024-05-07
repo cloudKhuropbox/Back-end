@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -64,6 +65,42 @@ class FilesServiceTest {
     @DisplayName("모든 파일 찾는 테스트")
     void findAll() {
     }
+
+    @Test
+    @DisplayName("파일 정렬 테스트: FileName")
+    void orderFilesByName(){
+
+        filesService.insertFile(new FilesDTO(Files.builder()
+                .fileName("1test")
+                .fileLink("/usr/bin")
+                .fileSize(2048L)
+                .fileType(".txt")
+                .createdAt(LocalDateTime.now())
+                .updatedAt(null)
+                .build()));
+
+        filesService.insertFile(new FilesDTO(Files.builder()
+                .fileName("test2")
+                .fileLink("/usr/bin")
+                .fileSize(2048L)
+                .fileType(".txt")
+                .createdAt(LocalDateTime.now())
+                .updatedAt(null)
+                .build()));
+
+        filesService.insertFile(new FilesDTO(Files.builder()
+                .fileName("3test")
+                .fileLink("/usr/bin")
+                .fileSize(2048L)
+                .fileType(".txt")
+                .createdAt(LocalDateTime.now())
+                .updatedAt(null)
+                .build()));
+
+        List<FilesInformationDTO> orderedFiles = filesService.getFilesOrderBy("fileName");
+        assertNotNull(orderedFiles);
+    }
+
 
     @Test
     @Transactional

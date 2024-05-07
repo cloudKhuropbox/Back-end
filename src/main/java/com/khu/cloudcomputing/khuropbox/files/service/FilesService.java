@@ -4,7 +4,6 @@ import com.khu.cloudcomputing.khuropbox.files.dto.FilesDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesInformationDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesUpdateDTO;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -21,4 +20,7 @@ public interface FilesService{
     Integer insertFile(FilesDTO file);
     String upload(MultipartFile multipartFile, String dirName, Integer id, String fileType) throws IOException;
     ResponseEntity<byte[]> download(String fileUrl) throws IOException;
+
+    //정렬
+    public List<FilesInformationDTO> getFilesOrderBy(String orderby);
 }

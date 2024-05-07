@@ -18,14 +18,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/file")
 public class FilesController {
-    @Autowired
+
     private final FilesService filesService;
     public FilesController(FilesService filesService) {
         this.filesService = filesService;
     }
     @GetMapping("files")
-    public List<FilesInformationDTO> Files(){
-        return filesService.findAll();
+    public List<FilesInformationDTO> Files(@RequestParam(required = false, value="orderby")String orderby){
+        return filesService.getFilesOrderBy(orderby);
     }
     @GetMapping("files/{id}")
     public FilesInformationDTO FilesId(@PathVariable(value="id") Integer id){

@@ -10,4 +10,10 @@ public interface FilesRepository extends JpaRepository<Files, Integer> {
     List<Files> findAll();
     Optional<Files> findById(Integer id);
     void deleteById(Integer id);
+
+    //정렬
+    List<Files> findAllByOrderByUpdatedAtDesc();
+    List<Files> findAllByOrderByFileName();
+    List<Files> findAllByOrderByFileSizeDesc();
+    List<Files> findAllByOrderByFileType();
 }

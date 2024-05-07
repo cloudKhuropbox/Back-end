@@ -39,7 +39,7 @@ import static org.springframework.web.servlet.function.RequestPredicates.content
 @RequiredArgsConstructor
 @Transactional
 public class FilesServiceImpl implements FilesService {
-    @Autowired
+
     private final FilesRepository filesRepository;
     private final AmazonS3Client amazonS3Client;
 
@@ -153,6 +153,17 @@ public class FilesServiceImpl implements FilesService {
             case "png" -> MediaType.IMAGE_PNG;
             case "jpg" -> MediaType.IMAGE_JPEG;
             default -> MediaType.APPLICATION_OCTET_STREAM;
+        };
+    }
+
+    //정렬
+    @Override
+    public List<FilesInformationDTO> getFilesOrderBy(String orderby) {
+        return switch(orderby){
+            case "fileName"-> filesRepository.findAllByOrderByFileName().stream().map(FilesInformationDTO::new).toList();
+            case "fileSize"->filesRepository.findAllByOrderByFileSizeDesc().stream().map(FilesInformationDTO::new).toList();
+            case "fileType"->filesRepository.findAllByOrderByFileType().stream().map(FilesInformationDTO::new).toList();
+            default -> filesRepository.findAllByOrderByUpdatedAtDesc().stream().map(FilesInformationDTO::new).toList();
         };
     }
 }
