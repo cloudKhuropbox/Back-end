@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface FileHistoryRepository extends JpaRepository<FileHistoryEntity, Integer> {
-    List<FileHistoryEntity> findAllByOrderByChangeDateDesc(Integer fileid);
+    List<FileHistoryEntity> findAllByFileIdOrderByChangeDateDesc(Integer fileid);
 }

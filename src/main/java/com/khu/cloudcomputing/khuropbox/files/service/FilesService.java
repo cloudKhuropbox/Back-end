@@ -17,7 +17,7 @@ public interface FilesService{
     String findLinkById(Integer id);
     List<FilesInformationDTO> findAll();
     //updateFile변경
-    void updateFile(FilesUpdateDTO filesUpdateDTO, String fileDescription);
+    void updateFile(FilesUpdateDTO filesUpdateDTO);
     void updateLink(Integer id, String fileLink);
     void deleteFile(Integer id);
     void deleteAtS3(String filePath);

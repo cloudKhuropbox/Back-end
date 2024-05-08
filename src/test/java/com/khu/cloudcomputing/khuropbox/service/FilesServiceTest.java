@@ -1,5 +1,6 @@
 package com.khu.cloudcomputing.khuropbox.service;
 
+import com.khu.cloudcomputing.khuropbox.files.dto.FileHistoryDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesInformationDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesUpdateDTO;
@@ -53,9 +54,8 @@ class FilesServiceTest {
                 .build()));
         //when
         String updatedName="test3";
-        FilesUpdateDTO fileUpdate=new FilesUpdateDTO(insertFile, updatedName,"/");
-        String changeDescription="test4: 이거저거 바꿔봤다";
-        filesService.updateFile(fileUpdate, changeDescription);
+        FilesUpdateDTO fileUpdate=new FilesUpdateDTO(insertFile, updatedName,"/","test4: 이거저거 바꿔봤다");
+        filesService.updateFile(fileUpdate);
         FilesInformationDTO updatedFile=filesService.findById(insertFile);
         //then
         assertEquals(updatedName, updatedFile.getFileName());
@@ -102,6 +102,39 @@ class FilesServiceTest {
         assertNotNull(orderedFiles);
     }
 
+    @Test
+    @Transactional
+    @DisplayName("파일 업데이트 및 히스토리 기록 테스트")
+    void updateFileAndRecordHistory() {
+        //given
+        FilesDTO newFile = new FilesDTO(Files.builder()
+                .fileName("original")
+                .fileLink("/usr/local")
+                .fileSize(1024L)
+                .fileType(".md")
+                .createdAt(LocalDateTime.now())
+                .updatedAt(null)
+                .build());
+        Integer fileId = filesService.insertFile(newFile);
+
+        // Update file information
+        String newFileName = "updatedName";
+        String newFileLink = "/usr/local/new";
+        String fileDescription = "Description of changes";
+        FilesUpdateDTO fileUpdateDTO = new FilesUpdateDTO(fileId, newFileName, newFileLink, fileDescription);
+
+        //when
+        filesService.updateFile(fileUpdateDTO);
+
+        //then
+        FilesInformationDTO updatedFile = filesService.findById(fileId);
+        assertEquals(newFileName, updatedFile.getFileName());
+
+        // Check if history is recorded
+        List<FileHistoryDTO> history = filesService.getFileChangeHistory(fileId);
+        assertFalse(history.isEmpty());
+        assertEquals(fileDescription, history.get(0).getChangeDescription());
+    }
 
     @Test
     @Transactional

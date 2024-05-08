@@ -40,8 +40,8 @@ public class FilesController {
     }
     //file description 추가
     @PostMapping("update")
-    public void Update(@RequestBody FilesUpdateDTO fileUpdate, @RequestBody String fileDescription){
-        filesService.updateFile(fileUpdate, fileDescription);
+    public void Update(@RequestBody FilesUpdateDTO fileUpdate){
+        filesService.updateFile(fileUpdate);
     }
 
     @PostMapping("upload")

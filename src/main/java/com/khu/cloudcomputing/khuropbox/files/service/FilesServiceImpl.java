@@ -68,14 +68,14 @@ public class FilesServiceImpl implements FilesService {
         return listDTO;
     }
     @Override
-    public void updateFile(FilesUpdateDTO fileUpdate, String changeDescription) {//파일이름 갱신 메서드
+    public void updateFile(FilesUpdateDTO fileUpdate) {//파일이름 갱신 메서드
         Files file = this.filesRepository.findById(fileUpdate.getId()).orElseThrow();
         file.update(fileUpdate.getFileName(), fileUpdate.getFileLink(), LocalDateTime.now());
         this.filesRepository.save(file);
 
         //변경이력 기록
         FileHistoryEntity fileHistory = new FileHistoryEntity();
-        fileHistory.updateFileHistory(file, changeDescription);
+        fileHistory.updateFileHistory(file, fileUpdate.getChangeDescription());
         fileHistoryRepository.save(fileHistory);
     }
     @Override
@@ -179,11 +179,11 @@ public class FilesServiceImpl implements FilesService {
 
     //파일 히스토리 관리
     public List<FileHistoryDTO> getFileChangeHistory(Integer id) {
-       List<FileHistoryEntity> fileHistoryEntities = fileHistoryRepository.findAllByOrderByChangeDateDesc(id);
-       Files file = filesRepository.findById(id).orElseThrow();
+       List<FileHistoryEntity> fileHistoryEntities = fileHistoryRepository.findAllByFileIdOrderByChangeDateDesc(id);
+       Files file = filesRepository.findById(id).orElseThrow(() -> new RuntimeException("File not found with id: " + id));
 
        return fileHistoryEntities.stream()
-               .map(mapToDTO(file, fileHistoryEntities))
+               .map(history->mapToDTO(file,history))
                .collect(Collectors.toList());
     }
 
