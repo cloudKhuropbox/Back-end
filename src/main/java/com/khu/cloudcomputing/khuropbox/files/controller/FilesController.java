@@ -5,6 +5,7 @@ import com.khu.cloudcomputing.khuropbox.files.dto.FilesDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesInformationDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesUpdateDTO;
 import com.khu.cloudcomputing.khuropbox.files.service.FilesService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,13 +18,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 @Slf4j
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/file")
 public class FilesController {
-
     private final FilesService filesService;
-    public FilesController(FilesService filesService) {
-        this.filesService = filesService;
-    }
     @GetMapping("files")
     public List<FilesInformationDTO> Files(@RequestParam(required = false, value="orderby")String orderby){
         return filesService.getFilesOrderBy(orderby);

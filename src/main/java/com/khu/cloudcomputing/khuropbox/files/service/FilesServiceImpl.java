@@ -43,7 +43,6 @@ import static org.springframework.web.servlet.function.RequestPredicates.content
 @RequiredArgsConstructor
 @Transactional
 public class FilesServiceImpl implements FilesService {
-
     private final FilesRepository filesRepository;
     private final AmazonS3Client amazonS3Client;
     private final FileHistoryRepository fileHistoryRepository;

@@ -14,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 public class Files {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     private String fileName;
     @NonNull
@@ -35,7 +35,6 @@ public class Files {
         this.fileLink=fileLink;
         return this;
     }
-
 
     @OneToMany(mappedBy = "file", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<FileHistoryEntity> fileHistory = new ArrayList<FileHistoryEntity>();

@@ -19,7 +19,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional
 public class CommentsServiceImpl implements CommentsService {
-    @Autowired
     private final CommentsRepository commentsRepository;
     @Override
     public List<CommentsDTO> findByFileId(Integer fileId){

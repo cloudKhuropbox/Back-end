@@ -1,5 +1,6 @@
 package com.khu.cloudcomputing.khuropbox.auth.dto;
 
+import com.khu.cloudcomputing.khuropbox.auth.model.UserEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
