@@ -2,7 +2,6 @@ package com.khu.cloudcomputing.khuropbox.service;
 
 import com.khu.cloudcomputing.khuropbox.files.dto.FileHistoryDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesDTO;
-import com.khu.cloudcomputing.khuropbox.files.dto.FilesInformationDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesUpdateDTO;
 import com.khu.cloudcomputing.khuropbox.files.entity.Files;
 import com.khu.cloudcomputing.khuropbox.files.service.FilesService;
@@ -35,7 +34,7 @@ class FilesServiceTest {
                 .updatedAt(null)
                 .build()));
         //when
-        FilesInformationDTO findFile=filesService.findById(insertFile);
+        FilesDTO findFile=filesService.findById(insertFile);
         //then
         assertEquals(insertFile, findFile.getId());
     }
@@ -56,7 +55,7 @@ class FilesServiceTest {
         String updatedName="test3";
         FilesUpdateDTO fileUpdate=new FilesUpdateDTO(insertFile, updatedName,"/","test4: 이거저거 바꿔봤다");
         filesService.updateFile(fileUpdate);
-        FilesInformationDTO updatedFile=filesService.findById(insertFile);
+        FilesDTO updatedFile=filesService.findById(insertFile);
         //then
         assertEquals(updatedName, updatedFile.getFileName());
         assertNotNull(updatedFile.getUpdatedAt());
@@ -98,7 +97,7 @@ class FilesServiceTest {
                 .updatedAt(null)
                 .build()));
 
-        List<FilesInformationDTO> orderedFiles = filesService.getFilesOrderBy("fileName");
+        List<FilesDTO> orderedFiles = filesService.getFilesOrderBy("fileName");
         assertNotNull(orderedFiles);
     }
 
@@ -127,7 +126,7 @@ class FilesServiceTest {
         filesService.updateFile(fileUpdateDTO);
 
         //then
-        FilesInformationDTO updatedFile = filesService.findById(fileId);
+        FilesDTO updatedFile = filesService.findById(fileId);
         assertEquals(newFileName, updatedFile.getFileName());
 
         // Check if history is recorded

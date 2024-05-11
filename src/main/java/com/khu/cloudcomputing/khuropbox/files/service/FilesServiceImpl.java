@@ -2,13 +2,11 @@ package com.khu.cloudcomputing.khuropbox.files.service;
 
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.*;
 import com.amazonaws.util.IOUtils;
 import com.khu.cloudcomputing.khuropbox.files.dto.FileHistoryDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesDTO;
-import com.khu.cloudcomputing.khuropbox.files.dto.FilesInformationDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesUpdateDTO;
 import com.khu.cloudcomputing.khuropbox.files.entity.FileHistoryEntity;
 import com.khu.cloudcomputing.khuropbox.files.entity.Files;
@@ -17,7 +15,6 @@ import com.khu.cloudcomputing.khuropbox.files.repository.FilesRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -31,12 +28,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static org.springframework.web.servlet.function.RequestPredicates.contentType;
 
 @Slf4j
 @Service
@@ -50,21 +44,26 @@ public class FilesServiceImpl implements FilesService {
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
     @Override
-    public FilesInformationDTO findById(Integer id) {//id를 이용하여 찾는 메서드
-        return new FilesInformationDTO(filesRepository.findById(id).orElseThrow());
+    public FilesDTO findById(Integer id) {//id를 이용하여 찾는 메서드
+        return new FilesDTO(filesRepository.findById(id).orElseThrow());
     }
     @Override
-    public String findLinkById(Integer id){
-        return filesRepository.findById(id).orElseThrow().getFileLink();
+    public List<FilesDTO> findUserFile(String userId, String orderby) {
+        return switch(orderby){
+            case "fileName"-> filesRepository.findAllByOwner_IdOrderByFileName(userId).stream().map(FilesDTO::new).toList();
+            case "fileSize"->filesRepository.findAllByOwner_IdOrderByFileSizeDesc(userId).stream().map(FilesDTO::new).toList();
+            case "fileType"->filesRepository.findAllByOwner_IdOrderByFileType(userId).stream().map(FilesDTO::new).toList();
+            default -> filesRepository.findAllByOwner_IdOrderByUpdatedAtDesc(userId).stream().map(FilesDTO::new).toList();
+        };
     }
     @Override
-    public List<FilesInformationDTO> findAll() {//모든 파일을 찾는 메서드, 추후 user객체가 연계되면 바꿀 예정
-        List<Files> list = filesRepository.findAll();
-        List<FilesInformationDTO> listDTO = new ArrayList<>();
-        for (Files files : list) {
-            listDTO.add(new FilesInformationDTO(files));
-        }
-        return listDTO;
+    public List<FilesDTO> findTeamFile(Integer teamId, String orderby) {
+        return switch(orderby){
+            case "fileName"-> filesRepository.findAllByTeamIdOrderByFileName(teamId).stream().map(FilesDTO::new).toList();
+            case "fileSize"->filesRepository.findAllByTeamIdOrderByFileSizeDesc(teamId).stream().map(FilesDTO::new).toList();
+            case "fileType"->filesRepository.findAllByTeamIdOrderByFileType(teamId).stream().map(FilesDTO::new).toList();
+            default -> filesRepository.findAllByTeamIdOrderByUpdatedAtDesc(teamId).stream().map(FilesDTO::new).toList();
+        };
     }
     @Override
     public void updateFile(FilesUpdateDTO fileUpdate) {//파일이름 갱신 메서드
@@ -167,12 +166,12 @@ public class FilesServiceImpl implements FilesService {
 
     //정렬
     @Override
-    public List<FilesInformationDTO> getFilesOrderBy(String orderby) {
+    public List<FilesDTO> getFilesOrderBy(String orderby) {
         return switch(orderby){
-            case "fileName"-> filesRepository.findAllByOrderByFileName().stream().map(FilesInformationDTO::new).toList();
-            case "fileSize"->filesRepository.findAllByOrderByFileSizeDesc().stream().map(FilesInformationDTO::new).toList();
-            case "fileType"->filesRepository.findAllByOrderByFileType().stream().map(FilesInformationDTO::new).toList();
-            default -> filesRepository.findAllByOrderByUpdatedAtDesc().stream().map(FilesInformationDTO::new).toList();
+            case "fileName"-> filesRepository.findAllByOrderByFileName().stream().map(FilesDTO::new).toList();
+            case "fileSize"->filesRepository.findAllByOrderByFileSizeDesc().stream().map(FilesDTO::new).toList();
+            case "fileType"->filesRepository.findAllByOrderByFileType().stream().map(FilesDTO::new).toList();
+            default -> filesRepository.findAllByOrderByUpdatedAtDesc().stream().map(FilesDTO::new).toList();
         };
     }
 

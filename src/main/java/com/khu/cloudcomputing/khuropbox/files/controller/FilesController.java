@@ -2,13 +2,17 @@ package com.khu.cloudcomputing.khuropbox.files.controller;
 
 import com.khu.cloudcomputing.khuropbox.files.dto.FileHistoryDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesDTO;
-import com.khu.cloudcomputing.khuropbox.files.dto.FilesInformationDTO;
+import com.khu.cloudcomputing.khuropbox.files.dto.FilesDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesUpdateDTO;
+import com.khu.cloudcomputing.khuropbox.files.entity.Files;
 import com.khu.cloudcomputing.khuropbox.files.service.FilesService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,22 +23,37 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/file")
+@RequestMapping("/files")
 public class FilesController {
     private final FilesService filesService;
-    @GetMapping("files")
-    public List<FilesInformationDTO> Files(@RequestParam(required = false, value="orderby")String orderby){
-        return filesService.getFilesOrderBy(orderby);
+    @GetMapping("list")
+    public List<FilesDTO> Files(@RequestParam(required = false, value="orderby")String orderby){
+        Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
+        String id=authentication.getName();
+        return filesService.findUserFile(id,orderby);
     }
-    @GetMapping("files/{id}")
-    public FilesInformationDTO FilesId(@PathVariable(value="id") Integer id){
-        return filesService.findById(id);
+    @GetMapping("info/{id}")
+    public ResponseEntity<?> FilesId(@PathVariable(value="id") Integer fileId){
+        Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
+        String id=authentication.getName();
+        FilesDTO file=filesService.findById(fileId);
+        if(id.equals(file.getOwner().getId())){
+            return ResponseEntity.ok(file);
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
-    @PostMapping("delete/{id}")
-    public void Delete(@PathVariable(value="id") Integer id){
-        String filePath = filesService.findLinkById(id).substring(51);
-        filesService.deleteAtS3(filePath);
-        filesService.deleteFile(id);
+    @PostMapping("delete/{fileId}")
+    public ResponseEntity<?> Delete(@PathVariable(value="fileId") Integer fileId){
+        Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
+        String id=authentication.getName();
+        FilesDTO file=filesService.findById(fileId);
+        if(id.equals(file.getOwner().getId())) {
+            String filePath = file.getFileLink().substring(51);
+            filesService.deleteAtS3(filePath);
+            filesService.deleteFile(fileId);
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
     //file description 추가
     @PostMapping("update")
@@ -43,7 +62,7 @@ public class FilesController {
     }
 
     @PostMapping("upload")
-    public void Upload(@RequestPart(value="fileName") String fileName, @RequestPart(value = "file") MultipartFile multipartFile) {
+    public ResponseEntity<?> Upload(@RequestPart(value="fileName") String fileName, @RequestPart(value = "file") MultipartFile multipartFile) {
         String fileLink = "";
         if (multipartFile != null) { // 파일 업로드한 경우에만
             try {// 파일 업로드
@@ -58,16 +77,25 @@ public class FilesController {
                 fileLink= URLDecoder.decode(fileLink, StandardCharsets.UTF_8);
                 log.info("fileLink = " + fileLink);
                 filesService.updateLink(index, fileLink);
+                return ResponseEntity.ok().build();
             } catch (IOException e) {
                 log.info("error");
+                return ResponseEntity.badRequest().build();
             }
         }
+        return ResponseEntity.badRequest().build();
     }
-    @GetMapping("download/{id}")
-    public ResponseEntity<byte[]> Download(@PathVariable(value="id") Integer id) throws IOException {
-        String filePath = filesService.findLinkById(id).substring(51);
-        log.info(filePath);
-        return filesService.download(filePath);
+    @GetMapping("download/{fileId}")
+    public ResponseEntity<?> Download(@PathVariable(value="fileId") Integer fileId) throws IOException {
+        Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
+        String id=authentication.getName();
+        FilesDTO file=filesService.findById(fileId);
+        if(id.equals(file.getOwner().getId())) {
+            String filePath = file.getFileLink().substring(51);
+            log.info(filePath);
+            return ResponseEntity.ok(filesService.download(filePath));
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
     //파일 히스토리 접근

@@ -1,5 +1,6 @@
 package com.khu.cloudcomputing.khuropbox.files.entity;
 
+import com.khu.cloudcomputing.khuropbox.auth.model.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.relational.core.sql.In;
@@ -24,7 +25,9 @@ public class Files {
     private String fileType;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private String ownerId;
+    @ManyToOne(fetch=FetchType.LAZY)
+    @JoinColumn(name="userId")
+    private UserEntity owner;
     private Integer teamId;
 
     public Files update(String fileName, String fileLink, LocalDateTime updatedAt, Integer teamId){

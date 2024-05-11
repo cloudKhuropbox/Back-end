@@ -2,10 +2,12 @@ package com.khu.cloudcomputing.khuropbox.team.controller;
 
 import com.khu.cloudcomputing.khuropbox.auth.model.UserEntity;
 import com.khu.cloudcomputing.khuropbox.auth.persistence.UserRepository;
+import com.khu.cloudcomputing.khuropbox.files.service.FilesService;
 import com.khu.cloudcomputing.khuropbox.team.dto.InsertTeamDTO;
 import com.khu.cloudcomputing.khuropbox.team.dto.TeamDTO;
 import com.khu.cloudcomputing.khuropbox.team.service.TeamService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -14,11 +16,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/teams")
 public class TeamController {
     private final TeamService teamService;
+    private final FilesService filesService;
     private final UserRepository userRepository;
     @GetMapping("memberlist/{teamId}")
     public ResponseEntity<?> MemberList(@PathVariable(value="teamId")Integer teamId){
@@ -87,6 +91,16 @@ public class TeamController {
         if(id.equals(admin.getId())) {
             teamService.deleteByTeamId(teamDTO.getTeamId());
             return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    }
+    @GetMapping("filelist/{teamId}")
+    public ResponseEntity<?> Files(@PathVariable(value="teamId")Integer teamId, @RequestParam(required = false, value="orderby")String orderby){
+        Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
+        String id=authentication.getName();
+        List<UserEntity> members=teamService.findTeamMember(teamId);
+        if(members.contains(userRepository.findAllById(id).orElseThrow())) {
+            return ResponseEntity.ok(filesService.findTeamFile(teamId, orderby));
         }
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
