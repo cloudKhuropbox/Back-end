@@ -13,5 +13,6 @@ public class FilesUpdateDTO {
     private Integer id;
     private String fileName;
     private String fileLink;
+    private Integer teamId;
     private String changeDescription;
 }

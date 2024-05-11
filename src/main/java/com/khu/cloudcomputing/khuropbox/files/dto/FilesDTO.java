@@ -1,5 +1,6 @@
 package com.khu.cloudcomputing.khuropbox.files.dto;
 
+import com.khu.cloudcomputing.khuropbox.auth.model.UserEntity;
 import com.khu.cloudcomputing.khuropbox.files.entity.Files;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,6 +19,9 @@ public class FilesDTO {
     private String fileType;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private UserEntity owner;
+    private Integer teamId;
+
     public FilesDTO(Files entity){
         this.id=entity.getId();
         this.fileName=entity.getFileName();
@@ -26,6 +30,8 @@ public class FilesDTO {
         this.fileType=entity.getFileType();
         this.createdAt=entity.getCreatedAt();
         this.updatedAt=entity.getUpdatedAt();
+        this.owner=entity.getOwner();
+        this.teamId=entity.getTeamId();
     }
 
     public Files toEntity(){
@@ -36,6 +42,8 @@ public class FilesDTO {
                 .fileType(fileType)
                 .createdAt(createdAt)
                 .updatedAt(updatedAt)
+                .owner(owner)
+                .teamId(teamId)
                 .build();
     }
 }

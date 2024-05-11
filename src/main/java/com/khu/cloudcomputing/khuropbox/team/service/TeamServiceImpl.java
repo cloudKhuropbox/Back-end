@@ -1,21 +1,16 @@
 package com.khu.cloudcomputing.khuropbox.team.service;
 
-import com.khu.cloudcomputing.khuropbox.auth.dto.UserDTO;
 import com.khu.cloudcomputing.khuropbox.auth.model.UserEntity;
 import com.khu.cloudcomputing.khuropbox.auth.persistence.UserRepository;
-import com.khu.cloudcomputing.khuropbox.files.dto.FilesInformationDTO;
-import com.khu.cloudcomputing.khuropbox.files.entity.Files;
 import com.khu.cloudcomputing.khuropbox.team.dto.InsertTeamDTO;
 import com.khu.cloudcomputing.khuropbox.team.dto.TeamDTO;
 import com.khu.cloudcomputing.khuropbox.team.dto.UserTeamDTO;
 import com.khu.cloudcomputing.khuropbox.team.entity.Team;
-import com.khu.cloudcomputing.khuropbox.team.entity.UserTeam;
 import com.khu.cloudcomputing.khuropbox.team.repository.TeamRepository;
 import com.khu.cloudcomputing.khuropbox.team.repository.UserTeamRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;

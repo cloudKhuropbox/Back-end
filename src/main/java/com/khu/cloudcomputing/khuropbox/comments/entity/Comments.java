@@ -1,9 +1,7 @@
 package com.khu.cloudcomputing.khuropbox.comments.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.khu.cloudcomputing.khuropbox.auth.model.UserEntity;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -17,7 +15,9 @@ public class Comments {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-    private String userName;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name="userId")
+    private UserEntity user;
     private Integer fileId;
     private String comment;
     private LocalDateTime createdAt;
