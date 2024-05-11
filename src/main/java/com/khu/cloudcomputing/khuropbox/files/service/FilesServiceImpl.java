@@ -99,6 +99,7 @@ public class FilesServiceImpl implements FilesService {
     @Override
     public Integer insertFile(FilesDTO file) {//파일 업로드 메서드
         file.setCreatedAt(LocalDateTime.now());
+        file.setUpdatedAt(LocalDateTime.now());
         return filesRepository.save(file.toEntity()).getId();
     }
     @Override
@@ -124,7 +125,7 @@ public class FilesServiceImpl implements FilesService {
         return new ResponseEntity<>(bytes, httpHeaders, HttpStatus.OK);
     }
     private String upload(File uploadFile, String dirName, Integer id, String fileType) {
-        String fileName = dirName + "/" + id+"."+fileType;
+        String fileName = dirName + id+"."+fileType;
         String uploadImageUrl = putS3(uploadFile, fileName);
         removeNewFile(uploadFile);  // convert()함수로 인해서 로컬에 생성된 File 삭제 (MultipartFile -> File 전환 하며 로컬에 파일 생성됨)
         return uploadImageUrl;      // 업로드된 파일의 S3 URL 주소 반환

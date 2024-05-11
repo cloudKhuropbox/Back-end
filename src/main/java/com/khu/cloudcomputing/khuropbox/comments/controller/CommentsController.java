@@ -2,6 +2,7 @@ package com.khu.cloudcomputing.khuropbox.comments.controller;
 
 import com.khu.cloudcomputing.khuropbox.auth.persistence.UserRepository;
 import com.khu.cloudcomputing.khuropbox.comments.dto.CommentsDTO;
+import com.khu.cloudcomputing.khuropbox.comments.dto.CommentsInfoDTO;
 import com.khu.cloudcomputing.khuropbox.comments.dto.CommentsUpdateDTO;
 import com.khu.cloudcomputing.khuropbox.comments.service.CommentsService;
 import lombok.RequiredArgsConstructor;
@@ -21,11 +22,11 @@ public class CommentsController {
     private final UserRepository userRepository;
     private final CommentsService commentsService;
     @GetMapping("comments/{fileId}")
-    public List<CommentsDTO> Files(@PathVariable(value="fileId")Integer fileId){
+    public List<CommentsInfoDTO> Files(@PathVariable(value="fileId")Integer fileId){
         return commentsService.findByFileId(fileId);
     }
-    @GetMapping("comment/{id}")
-    public CommentsDTO Comment(@PathVariable(value="id") Integer id){
+    @GetMapping("comment/{id}")//쓰지 않을 것으로 보임
+    public CommentsInfoDTO Comment(@PathVariable(value="id") Integer id){
         return commentsService.findById(id);
     }
     @PostMapping("create")
@@ -39,7 +40,7 @@ public class CommentsController {
     public ResponseEntity<?> Delete(@PathVariable(value="id") Integer id){
         Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
         String userId=authentication.getName();
-        if(userId.equals(commentsService.findById(id).getUser().getId())){
+        if(userId.equals(commentsService.findUserId(id))){
             commentsService.deleteComment(id);
             return ResponseEntity.ok().build();
         }
@@ -49,7 +50,7 @@ public class CommentsController {
     public ResponseEntity<?> Update(@RequestBody CommentsUpdateDTO commentsUpdate){
         Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
         String userId=authentication.getName();
-        if(userId.equals(commentsService.findById(commentsUpdate.getId()).getUser().getId())){
+        if(userId.equals(commentsService.findUserId(commentsUpdate.getId()))){
             commentsService.updateComment(commentsUpdate);
             return ResponseEntity.ok().build();
         }

@@ -25,7 +25,7 @@ public class Files {
     private String fileType;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    @ManyToOne(fetch=FetchType.LAZY)
+    @ManyToOne(fetch=FetchType.EAGER)
     @JoinColumn(name="userId")
     private UserEntity owner;
     private Integer teamId;
