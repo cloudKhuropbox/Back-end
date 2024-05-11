@@ -2,6 +2,7 @@ package com.khu.cloudcomputing.khuropbox.files.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.relational.core.sql.In;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -23,12 +24,14 @@ public class Files {
     private String fileType;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String ownerId;
+    private Integer teamId;
 
-
-    public Files update(String fileName, String fileLink, LocalDateTime updatedAt){
+    public Files update(String fileName, String fileLink, LocalDateTime updatedAt, Integer teamId){
         this.fileName=fileName;
         this.fileLink=fileLink;
         this.updatedAt=updatedAt;
+        this.teamId=teamId;
         return this;
     }
     public Files updateLink(String fileLink){

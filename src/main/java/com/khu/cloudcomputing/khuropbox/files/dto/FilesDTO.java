@@ -18,6 +18,9 @@ public class FilesDTO {
     private String fileType;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String ownerId;
+    private Integer teamId;
+
     public FilesDTO(Files entity){
         this.id=entity.getId();
         this.fileName=entity.getFileName();
@@ -26,6 +29,8 @@ public class FilesDTO {
         this.fileType=entity.getFileType();
         this.createdAt=entity.getCreatedAt();
         this.updatedAt=entity.getUpdatedAt();
+        this.ownerId=entity.getOwnerId();
+        this.teamId=entity.getTeamId();
     }
 
     public Files toEntity(){
@@ -36,6 +41,8 @@ public class FilesDTO {
                 .fileType(fileType)
                 .createdAt(createdAt)
                 .updatedAt(updatedAt)
+                .ownerId(ownerId)
+                .teamId(teamId)
                 .build();
     }
 }

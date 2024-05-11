@@ -1,5 +1,6 @@
 package com.khu.cloudcomputing.khuropbox.comments.dto;
 
+import com.khu.cloudcomputing.khuropbox.auth.model.UserEntity;
 import com.khu.cloudcomputing.khuropbox.comments.entity.Comments;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,14 +13,14 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class CommentsDTO {
     private Integer id;
-    private String userName;
+    private UserEntity user;
     private Integer fileId;
     private String comment;
     private LocalDateTime createdAt;
     private Boolean updated;
     public CommentsDTO(Comments entity){
         this.id=entity.getId();
-        this.userName=entity.getUserName();
+        this.user=entity.getUser();
         this.fileId=entity.getFileId();
         this.comment=entity.getComment();
         this.createdAt=entity.getCreatedAt();
@@ -28,7 +29,7 @@ public class CommentsDTO {
 
     public Comments toEntity(){
         return Comments.builder()
-                .userName(userName)
+                .user(user)
                 .comment(comment)
                 .fileId(fileId)
                 .createdAt(createdAt)

@@ -69,7 +69,7 @@ public class FilesServiceImpl implements FilesService {
     @Override
     public void updateFile(FilesUpdateDTO fileUpdate) {//파일이름 갱신 메서드
         Files file = this.filesRepository.findById(fileUpdate.getId()).orElseThrow();
-        file.update(fileUpdate.getFileName(), fileUpdate.getFileLink(), LocalDateTime.now());
+        file.update(fileUpdate.getFileName(), fileUpdate.getFileLink(), LocalDateTime.now(), fileUpdate.getTeamId());
         this.filesRepository.save(file);
 
         //변경이력 기록
