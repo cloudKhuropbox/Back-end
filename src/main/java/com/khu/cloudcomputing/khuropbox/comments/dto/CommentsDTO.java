@@ -18,6 +18,7 @@ public class CommentsDTO {//댓글 입력시에만 사용
     private String comment;
     private LocalDateTime createdAt;
     private Boolean updated;
+    private Integer replyId;
     public CommentsDTO(Comments entity){
         this.id=entity.getId();
         this.user=entity.getUser();
@@ -25,6 +26,7 @@ public class CommentsDTO {//댓글 입력시에만 사용
         this.comment=entity.getComment();
         this.createdAt=entity.getCreatedAt();
         this.updated=entity.getUpdated();
+        this.replyId=entity.getReplyId();
     }
 
     public Comments toEntity(){
@@ -34,6 +36,7 @@ public class CommentsDTO {//댓글 입력시에만 사용
                 .fileId(fileId)
                 .createdAt(createdAt)
                 .updated(updated)
+                .replyId(replyId)
                 .build();
     }
 }

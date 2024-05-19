@@ -22,6 +22,7 @@ public class Comments {
     private String comment;
     private LocalDateTime createdAt;
     private Boolean updated;
+    private Integer replyId;
     public Comments update(String comment){
         this.comment=comment;
         this.updated=true;

@@ -24,7 +24,16 @@ public class CommentsServiceImpl implements CommentsService {
     private final CommentsRepository commentsRepository;
     @Override
     public List<CommentsInfoDTO> findByFileId(Integer fileId){
-        List<Comments> list = commentsRepository.findByFileId(fileId);
+        List<Comments> list = commentsRepository.findByFileIdOrderByCreatedAt(fileId);
+        List<CommentsInfoDTO> listDTO = new ArrayList<>();
+        for (Comments comments : list) {
+            listDTO.add(new CommentsInfoDTO(comments));
+        }
+        return listDTO;
+    }
+    @Override
+    public List<CommentsInfoDTO> findByReplyId(Integer replyId){
+        List<Comments> list = commentsRepository.findByReplyIdOrderByCreatedAt(replyId);
         List<CommentsInfoDTO> listDTO = new ArrayList<>();
         for (Comments comments : list) {
             listDTO.add(new CommentsInfoDTO(comments));
