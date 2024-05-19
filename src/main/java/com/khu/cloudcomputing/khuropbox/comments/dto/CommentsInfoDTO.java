@@ -18,6 +18,7 @@ public class CommentsInfoDTO {//댓글 조회할때만 사용
     private String comment;
     private LocalDateTime createdAt;
     private Boolean updated;
+    private Integer replyId;
     public CommentsInfoDTO(Comments entity){
         this.id=entity.getId();
         this.userName=entity.getUser().getUsername();
@@ -25,5 +26,6 @@ public class CommentsInfoDTO {//댓글 조회할때만 사용
         this.comment=entity.getComment();
         this.createdAt=entity.getCreatedAt();
         this.updated=entity.getUpdated();
+        this.replyId=entity.getReplyId();
     }
 }

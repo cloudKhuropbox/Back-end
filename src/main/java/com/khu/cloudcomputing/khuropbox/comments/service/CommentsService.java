@@ -8,6 +8,7 @@ import java.util.List;
 
 public interface CommentsService{
     List<CommentsInfoDTO> findByFileId(Integer fileId);
+    List<CommentsInfoDTO> findByReplyId(Integer replyId);
     CommentsInfoDTO findById(Integer id);
     String findUserId(Integer id);
     Integer createComment(CommentsDTO comment);

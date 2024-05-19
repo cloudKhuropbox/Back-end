@@ -29,6 +29,10 @@ public class CommentsController {
     public CommentsInfoDTO Comment(@PathVariable(value="id") Integer id){
         return commentsService.findById(id);
     }
+    @GetMapping("reply/{replyId}")
+    public List<CommentsInfoDTO> ReplyInfo(@PathVariable(value="replyId")Integer replyId){
+        return commentsService.findByReplyId(replyId);
+    }
     @PostMapping("create")
     public Integer Create(@RequestBody CommentsDTO comment){
         Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
