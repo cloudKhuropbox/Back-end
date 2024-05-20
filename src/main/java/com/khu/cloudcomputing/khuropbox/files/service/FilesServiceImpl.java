@@ -1,6 +1,7 @@
 package com.khu.cloudcomputing.khuropbox.files.service;
 
 
+import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.*;
@@ -27,6 +28,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -182,5 +184,53 @@ public class FilesServiceImpl implements FilesService {
     @Override
     public FileHistoryDTO mapToDTO(Files fileEntity,FileHistoryEntity historyEntity) {
         return new FileHistoryDTO(fileEntity, historyEntity);
+    }
+
+    @Override
+    public void createDirectory(String currentDir, String newDirName) {
+        try {
+            // Ensure the parent directory path ends with a slash
+            if (!currentDir.endsWith("/")) {
+                currentDir += "/";
+            }
+
+            String fullPath = currentDir + newDirName + "/";
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentLength(0);  // Set content length to 0 for directory
+
+            // Create an empty object to represent the directory
+            PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, fullPath, new ByteArrayInputStream(new byte[0]), metadata);
+            amazonS3Client.putObject(putObjectRequest);
+            log.info("Directory created successfully: {}", fullPath);
+        } catch (AmazonClientException ace) {
+            log.error("Error creating directory in S3", ace);
+            throw new RuntimeException("Failed to create directory in S3: " + ace.getMessage(), ace);
+        } catch (Exception e) {
+            log.error("Unexpected error occurred", e);
+            throw new RuntimeException("Unexpected error: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void moveFile(String source, String target) throws IOException {
+        try {
+            // Check input validity
+            if (source == null || target == null) {
+                throw new IllegalArgumentException("Source or target must not be null");
+            }
+
+            // Copy the file within the bucket
+            CopyObjectRequest copyObjRequest = new CopyObjectRequest(bucket, source, bucket, target);
+            amazonS3Client.copyObject(copyObjRequest);
+            log.info("File copied successfully from {} to {}", source, target);
+
+            // Delete the original file
+            DeleteObjectRequest deleteObjRequest = new DeleteObjectRequest(bucket, source);
+            amazonS3Client.deleteObject(deleteObjRequest);
+            log.info("Original file {} deleted successfully", source);
+        } catch (AmazonClientException ace) {
+            log.error("Error moving file from {} to {}", source, target, ace);
+            throw new IOException("Failed to move file: " + ace.getMessage(), ace);
+        }
     }
 }
