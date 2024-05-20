@@ -16,6 +16,10 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -47,23 +51,23 @@ public class FilesServiceImpl implements FilesService {
     public FilesDTO findById(Integer id) {//id를 이용하여 찾는 메서드
         return new FilesDTO(filesRepository.findById(id).orElseThrow());
     }
+
     @Override
-    public List<FilesDTO> findUserFile(String userId, String orderby) {
-        return switch(orderby){
-            case "fileName"-> filesRepository.findAllByOwner_IdOrderByFileName(userId).stream().map(FilesDTO::new).toList();
-            case "fileSize"->filesRepository.findAllByOwner_IdOrderByFileSizeDesc(userId).stream().map(FilesDTO::new).toList();
-            case "fileType"->filesRepository.findAllByOwner_IdOrderByFileType(userId).stream().map(FilesDTO::new).toList();
-            default -> filesRepository.findAllByOwner_IdOrderByUpdatedAtDesc(userId).stream().map(FilesDTO::new).toList();
-        };
+    public Page<FilesDTO> findUserPage(String userId, String orderby, int pageNum, String sort) {
+        Pageable pageable = (sort.equals("ASC")) ?
+                PageRequest.of(pageNum, 20, Sort.by(Sort.Direction.ASC, orderby))
+                : PageRequest.of(pageNum, 20, Sort.by(Sort.Direction.DESC, orderby));
+
+        return filesRepository.findAllByOwner_Id(pageable, userId).map(FilesDTO::new);
     }
+
     @Override
-    public List<FilesDTO> findTeamFile(Integer teamId, String orderby) {
-        return switch(orderby){
-            case "fileName"-> filesRepository.findAllByTeamIdOrderByFileName(teamId).stream().map(FilesDTO::new).toList();
-            case "fileSize"->filesRepository.findAllByTeamIdOrderByFileSizeDesc(teamId).stream().map(FilesDTO::new).toList();
-            case "fileType"->filesRepository.findAllByTeamIdOrderByFileType(teamId).stream().map(FilesDTO::new).toList();
-            default -> filesRepository.findAllByTeamIdOrderByUpdatedAtDesc(teamId).stream().map(FilesDTO::new).toList();
-        };
+    public Page<FilesDTO> findTeamFile(Integer teamId, String orderby, int pageNum, String sort) {
+        Pageable pageable = (sort.equals("ASC")) ?
+                PageRequest.of(pageNum, 20, Sort.by(Sort.Direction.ASC, orderby))
+                : PageRequest.of(pageNum, 20, Sort.by(Sort.Direction.DESC, orderby));
+
+        return filesRepository.findAllByTeamId(pageable, teamId).map(FilesDTO::new);
     }
     @Override
     public void updateFile(FilesUpdateDTO fileUpdate) {//파일이름 갱신 메서드
@@ -162,17 +166,6 @@ public class FilesServiceImpl implements FilesService {
             case "png" -> MediaType.IMAGE_PNG;
             case "jpg" -> MediaType.IMAGE_JPEG;
             default -> MediaType.APPLICATION_OCTET_STREAM;
-        };
-    }
-
-    //정렬
-    @Override
-    public List<FilesDTO> getFilesOrderBy(String orderby) {
-        return switch(orderby){
-            case "fileName"-> filesRepository.findAllByOrderByFileName().stream().map(FilesDTO::new).toList();
-            case "fileSize"->filesRepository.findAllByOrderByFileSizeDesc().stream().map(FilesDTO::new).toList();
-            case "fileType"->filesRepository.findAllByOrderByFileType().stream().map(FilesDTO::new).toList();
-            default -> filesRepository.findAllByOrderByUpdatedAtDesc().stream().map(FilesDTO::new).toList();
         };
     }
 

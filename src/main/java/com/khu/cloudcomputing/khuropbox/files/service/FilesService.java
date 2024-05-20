@@ -5,6 +5,7 @@ import com.khu.cloudcomputing.khuropbox.files.dto.FilesDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesUpdateDTO;
 import com.khu.cloudcomputing.khuropbox.files.entity.FileHistoryEntity;
 import com.khu.cloudcomputing.khuropbox.files.entity.Files;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,8 +14,8 @@ import java.util.List;
 
 public interface FilesService{
     FilesDTO findById(Integer id);
-    List<FilesDTO> findUserFile(String userId, String orderby);
-    List<FilesDTO> findTeamFile(Integer teamId, String orderby);
+    Page<FilesDTO> findUserPage(String userId, String orderby, int pageNum, String sort);
+    Page<FilesDTO> findTeamFile(Integer teamId, String orderby, int pageNum, String sort);
     //updateFile변경
     void updateFile(FilesUpdateDTO filesUpdateDTO);
     void updateLink(Integer id, String fileLink);
@@ -23,8 +24,7 @@ public interface FilesService{
     Integer insertFile(FilesDTO file);
     String upload(MultipartFile multipartFile, String dirName, Integer id, String fileType) throws IOException;
     ResponseEntity<byte[]> download(String fileUrl) throws IOException;
-    //정렬
-    List<FilesDTO> getFilesOrderBy(String orderby);
+
     //파일 히스토리
     List<FileHistoryDTO> getFileChangeHistory(Integer id);
     FileHistoryDTO mapToDTO(Files fileEntity, FileHistoryEntity fileHistoryEntity);

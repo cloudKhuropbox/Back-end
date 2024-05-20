@@ -95,12 +95,15 @@ public class TeamController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
     @GetMapping("filelist/{teamId}")
-    public ResponseEntity<?> Files(@PathVariable(value="teamId")Integer teamId, @RequestParam(required = false, value="orderby")String orderby){
+    public ResponseEntity<?> Files(@PathVariable(value="teamId")Integer teamId,
+                                   @RequestParam(required = false, defaultValue = "0", value = "page") int pageNum,
+                                   @RequestParam(required = false, defaultValue = "updatedAt", value = "orderby") String orderby,
+                                   @RequestParam(required = false, defaultValue = "DESC", value = "sort") String sort){
         Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
         String id=authentication.getName();
         List<UserEntity> members=teamService.findTeamMember(teamId);
         if(members.contains(userRepository.findAllById(id).orElseThrow())) {
-            return ResponseEntity.ok(filesService.findTeamFile(teamId, orderby));
+            return ResponseEntity.ok(filesService.findTeamFile(teamId, orderby, pageNum, sort));
         }
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }

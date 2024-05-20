@@ -7,6 +7,7 @@ import com.khu.cloudcomputing.khuropbox.files.dto.FilesUpdateDTO;
 import com.khu.cloudcomputing.khuropbox.files.service.FilesService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -26,12 +27,13 @@ import java.util.List;
 public class FilesController {
     private final FilesService filesService;
     private final UserRepository userRepository;
-    @GetMapping({"list", "list/{orderBy}"})
-    public List<FilesDTO> Files(@PathVariable(required = false, value="orderBy")String orderBy){
-        if (orderBy==null) orderBy="";
+    @GetMapping({"/"})
+    public Page<FilesDTO> Files(@RequestParam(required = false, defaultValue = "0", value = "page") int pageNum,
+                                @RequestParam(required = false, defaultValue = "updatedAt", value = "orderBy") String orderBy,
+                                @RequestParam(required = false, defaultValue = "DESC", value = "sort") String sort){
         Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
         String id=authentication.getName();
-        return filesService.findUserFile(id,orderBy);
+        return filesService.findUserPage(id,orderBy, pageNum, sort);
     }
     @GetMapping("info/{fileId}")
     public ResponseEntity<?> FilesId(@PathVariable(value="fileId") Integer fileId){
