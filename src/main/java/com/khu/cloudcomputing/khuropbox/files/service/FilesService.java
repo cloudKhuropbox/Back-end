@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.List;
 
 public interface FilesService{
@@ -33,4 +34,8 @@ public interface FilesService{
     //디렉토리 생성, 파일 이동
     public void createDirectory(String currentDit, String newDirName);
     public void moveFile(String source, String target) throws IOException;
+
+    //파일 일회용 링크 생성-공유
+    public URL generatePresignedUrl(String objectKey) throws IOException;
+
 };

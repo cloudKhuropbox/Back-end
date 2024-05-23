@@ -3,6 +3,7 @@ package com.khu.cloudcomputing.khuropbox.files.service;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.*;
 import com.amazonaws.util.IOUtils;
@@ -32,8 +33,10 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -232,5 +235,20 @@ public class FilesServiceImpl implements FilesService {
             log.error("Error moving file from {} to {}", source, target, ace);
             throw new IOException("Failed to move file: " + ace.getMessage(), ace);
         }
+    }
+
+    @Override
+    public URL generatePresignedUrl(String objectKey) throws IOException {
+        Date expiration = new Date();
+        long expTimeMillis = expiration.getTime();
+        expTimeMillis += 1000 * 60 * 60;
+        expiration.setTime(expTimeMillis);
+
+        GeneratePresignedUrlRequest generatePresignedUrlRequest =
+                new GeneratePresignedUrlRequest(bucket, objectKey)
+                        .withMethod(HttpMethod.GET)
+                        .withExpiration(expiration);
+
+        return amazonS3Client.generatePresignedUrl(generatePresignedUrlRequest);
     }
 }

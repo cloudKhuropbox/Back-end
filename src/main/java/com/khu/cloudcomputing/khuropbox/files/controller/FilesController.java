@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -110,4 +111,23 @@ public class FilesController {
         List<FileHistoryDTO> changeHistory = filesService.getFileChangeHistory(fileId);
         return ResponseEntity.ok(changeHistory);
     }
+
+    @GetMapping("share-file")
+    public ResponseEntity<?> shareFile(@RequestParam Integer fileId) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String id = authentication.getName();
+            FilesDTO file = filesService.findById(fileId);
+
+            if (id.equals(file.getOwner().getId())) {
+                String objectKey = file.getFileLink().substring(50); // Adjust the substring index based on your actual file path structure
+                URL presignedUrl = filesService.generatePresignedUrl(objectKey);
+                return ResponseEntity.ok().body(presignedUrl.toString());
+            }
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().body("Error generating URL: " + e.getMessage());
+        }
+    }
+
 }
