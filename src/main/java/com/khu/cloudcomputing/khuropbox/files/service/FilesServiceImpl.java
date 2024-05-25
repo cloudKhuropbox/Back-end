@@ -1,11 +1,5 @@
 package com.khu.cloudcomputing.khuropbox.files.service;
 
-
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.HttpMethod;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.*;
 import com.amazonaws.util.IOUtils;
 import com.khu.cloudcomputing.khuropbox.files.dto.FileHistoryDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesDTO;
@@ -28,15 +22,23 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.*;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -47,7 +49,7 @@ import java.util.stream.Collectors;
 @Transactional
 public class FilesServiceImpl implements FilesService {
     private final FilesRepository filesRepository;
-    private final AmazonS3Client amazonS3Client;
+    private final S3Client s3Client;
     private final FileHistoryRepository fileHistoryRepository;
 
     @Value("${cloud.aws.s3.bucket}")
@@ -96,13 +98,18 @@ public class FilesServiceImpl implements FilesService {
         filesRepository.deleteById(id);
     }
     @Override
-    public void deleteAtS3(String filePath){
+    public void deleteAtS3(String filePath) {
         try {
-            // S3에서 삭제
-            amazonS3Client.deleteObject(new DeleteObjectRequest(bucket, filePath));
+            // S3에서 삭제 요청
+            DeleteObjectRequest request = DeleteObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(filePath)
+                    .build();
+
+            s3Client.deleteObject(request);
             log.info(String.format("[%s] deletion complete", filePath));
-        } catch (AmazonServiceException e) {
-            log.error(e.getErrorMessage());
+        } catch (S3Exception e) {
+            log.error(e.awsErrorDetails().errorMessage());
         }
     }
     @Override
@@ -118,20 +125,25 @@ public class FilesServiceImpl implements FilesService {
         return upload(uploadFile, dirName, id, fileType);
     }
     @Override
-    public ResponseEntity<byte[]> download(String fileUrl) throws IOException { // 객체 다운  fileUrl : 폴더명/파일네임.파일확장자
-        S3Object s3Object = amazonS3Client.getObject(new GetObjectRequest(bucket, fileUrl));
-        S3ObjectInputStream objectInputStream = s3Object.getObjectContent();
-        byte[] bytes = IOUtils.toByteArray(objectInputStream);
+    public ResponseEntity<byte[]> download(String fileUrl) throws IOException {
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucket)
+                .key(fileUrl)
+                .build();
 
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.setContentType(contentType(fileUrl));
-        httpHeaders.setContentLength(bytes.length);
-        String[] arr = fileUrl.split("/");
-        String type = arr[arr.length - 1];
-        String fileName = URLEncoder.encode(type, "UTF-8").replaceAll("\\+", "%20");
-        httpHeaders.setContentDispositionFormData("attachment", fileName); // 파일이름 지정
+        try (ResponseInputStream<GetObjectResponse> s3Object = s3Client.getObject(getObjectRequest)) {
+            byte[] bytes = IOUtils.toByteArray(s3Object);
 
-        return new ResponseEntity<>(bytes, httpHeaders, HttpStatus.OK);
+            HttpHeaders httpHeaders = new HttpHeaders();
+            httpHeaders.setContentType(contentType(fileUrl));
+            httpHeaders.setContentLength(bytes.length);
+            String[] arr = fileUrl.split("/");
+            String type = arr[arr.length - 1];
+            String fileName = URLEncoder.encode(type, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+            httpHeaders.setContentDispositionFormData("attachment", fileName);
+
+            return new ResponseEntity<>(bytes, httpHeaders, HttpStatus.OK);
+        }
     }
     private String upload(File uploadFile, String dirName, Integer id, String fileType) {
         String fileName = dirName + id+"."+fileType;
@@ -147,11 +159,14 @@ public class FilesServiceImpl implements FilesService {
         }
     }
     private String putS3(File uploadFile, String fileName) {
-        amazonS3Client.putObject(
-                new PutObjectRequest(bucket, fileName, uploadFile)
-                        .withCannedAcl(CannedAccessControlList.PublicRead)    // PublicRead 권한으로 업로드 됨
-        );
-        return amazonS3Client.getUrl(bucket, fileName).toString();
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(fileName)
+                .acl(ObjectCannedACL.PUBLIC_READ)
+                .build();
+
+        s3Client.putObject(putObjectRequest, RequestBody.fromFile(uploadFile));
+        return String.format("https://%s.s3.amazonaws.com/%s", bucket, fileName);
     }
     private Optional<File> convert(MultipartFile file) throws IOException {
         File convertFile = new File(file.getOriginalFilename()); // 업로드한 파일의 이름
@@ -198,16 +213,18 @@ public class FilesServiceImpl implements FilesService {
             }
 
             String fullPath = currentDir + newDirName + "/";
-            ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentLength(0);  // Set content length to 0 for directory
 
             // Create an empty object to represent the directory
-            PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, fullPath, new ByteArrayInputStream(new byte[0]), metadata);
-            amazonS3Client.putObject(putObjectRequest);
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(fullPath)
+                    .build();
+
+            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(new byte[0]));
             log.info("Directory created successfully: {}", fullPath);
-        } catch (AmazonClientException ace) {
-            log.error("Error creating directory in S3", ace);
-            throw new RuntimeException("Failed to create directory in S3: " + ace.getMessage(), ace);
+        } catch (S3Exception e) {
+            log.error("Error creating directory in S3", e);
+            throw new RuntimeException("Failed to create directory in S3: " + e.getMessage(), e);
         } catch (Exception e) {
             log.error("Unexpected error occurred", e);
             throw new RuntimeException("Unexpected error: " + e.getMessage(), e);
@@ -223,32 +240,25 @@ public class FilesServiceImpl implements FilesService {
             }
 
             // Copy the file within the bucket
-            CopyObjectRequest copyObjRequest = new CopyObjectRequest(bucket, source, bucket, target);
-            amazonS3Client.copyObject(copyObjRequest);
+            CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
+                    .sourceBucket(bucket)
+                    .sourceKey(source)
+                    .destinationBucket(bucket)
+                    .destinationKey(target)
+                    .build();
+            s3Client.copyObject(copyObjectRequest);
             log.info("File copied successfully from {} to {}", source, target);
 
             // Delete the original file
-            DeleteObjectRequest deleteObjRequest = new DeleteObjectRequest(bucket, source);
-            amazonS3Client.deleteObject(deleteObjRequest);
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(source)
+                    .build();
+            s3Client.deleteObject(deleteObjectRequest);
             log.info("Original file {} deleted successfully", source);
-        } catch (AmazonClientException ace) {
-            log.error("Error moving file from {} to {}", source, target, ace);
-            throw new IOException("Failed to move file: " + ace.getMessage(), ace);
+        } catch (S3Exception e) {
+            log.error("Error moving file from {} to {}", source, target, e);
+            throw new IOException("Failed to move file: " + e.getMessage(), e);
         }
-    }
-
-    @Override
-    public URL generatePresignedUrl(String objectKey) throws IOException {
-        Date expiration = new Date();
-        long expTimeMillis = expiration.getTime();
-        expTimeMillis += 1000 * 60 * 60;
-        expiration.setTime(expTimeMillis);
-
-        GeneratePresignedUrlRequest generatePresignedUrlRequest =
-                new GeneratePresignedUrlRequest(bucket, objectKey)
-                        .withMethod(HttpMethod.GET)
-                        .withExpiration(expiration);
-
-        return amazonS3Client.generatePresignedUrl(generatePresignedUrlRequest);
     }
 }

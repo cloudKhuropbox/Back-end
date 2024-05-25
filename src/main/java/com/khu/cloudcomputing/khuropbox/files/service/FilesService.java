@@ -34,8 +34,4 @@ public interface FilesService{
     //디렉토리 생성, 파일 이동
     public void createDirectory(String currentDit, String newDirName);
     public void moveFile(String source, String target) throws IOException;
-
-    //파일 일회용 링크 생성-공유
-    public URL generatePresignedUrl(String objectKey) throws IOException;
-
 };

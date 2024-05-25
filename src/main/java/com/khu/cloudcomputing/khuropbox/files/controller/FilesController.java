@@ -1,6 +1,7 @@
 package com.khu.cloudcomputing.khuropbox.files.controller;
 
 import com.khu.cloudcomputing.khuropbox.auth.persistence.UserRepository;
+import com.khu.cloudcomputing.khuropbox.configuration.AwsService;
 import com.khu.cloudcomputing.khuropbox.files.dto.FileHistoryDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesUpdateDTO;
@@ -21,6 +22,8 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -28,6 +31,7 @@ import java.util.List;
 public class FilesController {
     private final FilesService filesService;
     private final UserRepository userRepository;
+    private final AwsService awsService;
     @GetMapping({"/"})
     public Page<FilesDTO> Files(@RequestParam(required = false, defaultValue = "0", value = "page") int pageNum,
                                 @RequestParam(required = false, defaultValue = "updatedAt", value = "orderBy") String orderBy,
@@ -46,52 +50,36 @@ public class FilesController {
         }
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
-    @PostMapping("upload")
-    public ResponseEntity<?> Upload(@RequestPart(value = "file") List<MultipartFile> multipartFiles) {
-        String fileLink = "";
-        List<FilesDTO> filesList=new ArrayList<>();
-        for(MultipartFile multipartFile:multipartFiles) {
-            if (multipartFile != null) { // 파일 업로드한 경우에만
-                try {// 파일 업로드
-                    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-                    String id = authentication.getName();
-                    FilesDTO file = new FilesDTO();
-                    file.setFileName(multipartFile.getOriginalFilename());
-                    file.setFileSize(multipartFile.getSize());
-                    file.setFileLink(fileLink);
-                    file.setOwner(userRepository.findAllById(id).orElseThrow());
-                    String fileType = multipartFile.getOriginalFilename().substring(multipartFile.getOriginalFilename().lastIndexOf(".") + 1);
-                    file.setFileType(fileType);
-                    Integer index = filesService.insertFile(file);
-                    fileLink = filesService.upload(multipartFile, id + '/', index, fileType); // S3 버킷의 images 디렉토리 안에 저장됨, S3에 저장된 이름은 id값으로 부여.
-                    fileLink = URLDecoder.decode(fileLink, StandardCharsets.UTF_8);
-                    log.info("fileLink = " + fileLink);
-                    filesService.updateLink(index, fileLink);
-                    filesList.add(filesService.findById(index));
-                } catch (IOException e) {
-                    log.info("error");
-                    return ResponseEntity.badRequest().build();
-                }
-            }
-        }
-        return ResponseEntity.ok(filesList);
+
+    @PostMapping("/get-upload-url")
+    public ResponseEntity<String> getUploadUrl(@RequestBody Map<String, String> params) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String dirName = params.get("dirName");
+        Integer id = Integer.valueOf(params.get("id"));
+        String fileType = params.get("fileType");
+        String url = awsService.generateUploadPresignedUrl(dirName, id, fileType);
+        return ResponseEntity.ok(url);
     }
+
     @GetMapping("download/{fileId}")
-    public ResponseEntity<?> Download(@PathVariable(value="fileId") Integer fileId) throws IOException {
-        Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
-        String id=authentication.getName();
-        FilesDTO file=filesService.findById(fileId);
-        if(id.equals(file.getOwner().getId())) {
+    public ResponseEntity<?> Download(@PathVariable(value = "fileId") Integer fileId) throws IOException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String id = authentication.getName();
+        FilesDTO file = filesService.findById(fileId);
+        if (id.equals(file.getOwner().getId())) {
             String filePath = file.getFileLink().substring(50);
             log.info(filePath);
-            return ResponseEntity.ok(filesService.download(filePath));
+            URL presignedUrl = awsService.generateDownloadPresignedUrl(filePath);
+            return ResponseEntity.ok(presignedUrl.toString());
         }
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
+
     @PostMapping("update")
     public void Update(@RequestBody FilesUpdateDTO fileUpdate){
         filesService.updateFile(fileUpdate);
     }
+
     @PostMapping("delete/{fileId}")
     public ResponseEntity<?> Delete(@PathVariable(value="fileId") Integer fileId){
         Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
@@ -114,20 +102,16 @@ public class FilesController {
 
     @GetMapping("share-file")
     public ResponseEntity<?> shareFile(@RequestParam Integer fileId) {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String id = authentication.getName();
-            FilesDTO file = filesService.findById(fileId);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String id = authentication.getName();
+        FilesDTO file = filesService.findById(fileId);
 
-            if (id.equals(file.getOwner().getId())) {
-                String objectKey = file.getFileLink().substring(50); // Adjust the substring index based on your actual file path structure
-                URL presignedUrl = filesService.generatePresignedUrl(objectKey);
-                return ResponseEntity.ok().body(presignedUrl.toString());
-            }
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        } catch (IOException e) {
-            return ResponseEntity.internalServerError().body("Error generating URL: " + e.getMessage());
+        if (id.equals(file.getOwner().getId())) {
+            String objectKey = file.getFileLink().substring(50); // Adjust the substring index based on your actual file path structure
+            URL presignedUrl = awsService.generateDownloadPresignedUrl(objectKey);
+            return ResponseEntity.ok().body(presignedUrl.toString());
         }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
 }
