@@ -14,13 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -30,7 +26,6 @@ import java.util.Map;
 @RequestMapping("/files")
 public class FilesController {
     private final FilesService filesService;
-    private final UserRepository userRepository;
     private final AwsService awsService;
     @GetMapping({"/"})
     public Page<FilesDTO> Files(@RequestParam(required = false, defaultValue = "0", value = "page") int pageNum,
