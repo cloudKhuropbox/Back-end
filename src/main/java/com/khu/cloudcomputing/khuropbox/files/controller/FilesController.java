@@ -47,7 +47,7 @@ public class FilesController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
     @PostMapping("upload")
-    public ResponseEntity<?> Upload(@RequestPart(value = "file") List<MultipartFile> multipartFiles) {
+    public ResponseEntity<?> Upload(@RequestPart(value = "file") List<MultipartFile> multipartFiles, @RequestPart(value="teamId", required = false)Integer teamId) {
         String fileLink = "";
         List<FilesDTO> filesList=new ArrayList<>();
         for(MultipartFile multipartFile:multipartFiles) {
@@ -62,6 +62,7 @@ public class FilesController {
                     file.setOwner(userRepository.findAllById(id).orElseThrow());
                     String fileType = multipartFile.getOriginalFilename().substring(multipartFile.getOriginalFilename().lastIndexOf(".") + 1);
                     file.setFileType(fileType);
+                    file.setTeamId(teamId);
                     Integer index = filesService.insertFile(file);
                     fileLink = filesService.upload(multipartFile, id + '/', index, fileType); // S3 버킷의 images 디렉토리 안에 저장됨, S3에 저장된 이름은 id값으로 부여.
                     fileLink = URLDecoder.decode(fileLink, StandardCharsets.UTF_8);
