@@ -19,12 +19,9 @@ public interface FilesService{
     Page<FilesDTO> findTeamFile(Integer teamId, String orderby, int pageNum, String sort);
     //updateFile변경
     void updateFile(FilesUpdateDTO filesUpdateDTO);
-    void updateLink(Integer id, String fileLink);
     void deleteFile(Integer id);
     void deleteAtS3(String filePath);
     Integer insertFile(FilesDTO file);
-    String upload(MultipartFile multipartFile, String dirName, Integer id, String fileType) throws IOException;
-    ResponseEntity<byte[]> download(String fileUrl) throws IOException;
 
     //파일 히스토리
     List<FileHistoryDTO> getFileChangeHistory(Integer id);

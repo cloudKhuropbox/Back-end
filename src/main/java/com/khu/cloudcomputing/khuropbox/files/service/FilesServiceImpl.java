@@ -1,6 +1,8 @@
 package com.khu.cloudcomputing.khuropbox.files.service;
 
 import com.amazonaws.util.IOUtils;
+import com.khu.cloudcomputing.khuropbox.apiPayload.GeneralException;
+import com.khu.cloudcomputing.khuropbox.apiPayload.status.ErrorStatus;
 import com.khu.cloudcomputing.khuropbox.files.dto.FileHistoryDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesUpdateDTO;
@@ -54,11 +56,29 @@ public class FilesServiceImpl implements FilesService {
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
+
+    /**
+     * 파일 ID로 파일을 찾습니다.
+     *
+     * @param id 파일 ID
+     * @return 파일의 DTO
+     * @throws GeneralException 파일을 찾을 수 없는 경우
+     */
     @Override
-    public FilesDTO findById(Integer id) {//id를 이용하여 찾는 메서드
-        return new FilesDTO(filesRepository.findById(id).orElseThrow());
+    public FilesDTO findById(Integer id) {
+        return new FilesDTO(filesRepository.findById(id)
+                .orElseThrow(() -> new GeneralException(ErrorStatus._FILE_NOT_FOUND.getCode(), "File not found", HttpStatus.NOT_FOUND)));
     }
 
+    /**
+     * 사용자의 파일을 페이지 단위로 찾습니다.
+     *
+     * @param userId 사용자 ID
+     * @param orderby 정렬 기준
+     * @param pageNum 페이지 번호
+     * @param sort 정렬 방향 (ASC 또는 DESC)
+     * @return 페이지 단위로 파일 목록
+     */
     @Override
     public Page<FilesDTO> findUserPage(String userId, String orderby, int pageNum, String sort) {
         Pageable pageable = (sort.equals("ASC")) ?
@@ -76,31 +96,37 @@ public class FilesServiceImpl implements FilesService {
 
         return filesRepository.findAllByTeamId(pageable, teamId).map(FilesDTO::new);
     }
+    /**
+     * 파일 메타데이터를 업데이트합니다.
+     *
+     * @param fileUpdate 파일 업데이트 DTO
+     * @throws GeneralException 파일을 찾을 수 없는 경우
+     */
     @Override
-    public void updateFile(FilesUpdateDTO fileUpdate) {//파일이름 갱신 메서드
-        Files file = this.filesRepository.findById(fileUpdate.getId()).orElseThrow();
+    public void updateFile(FilesUpdateDTO fileUpdate) {
+        Files file = this.filesRepository.findById(fileUpdate.getId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus._FILE_NOT_FOUND.getCode(), "File not found", HttpStatus.NOT_FOUND));
         file.update(fileUpdate.getFileName(), fileUpdate.getFileLink(), LocalDateTime.now(), fileUpdate.getTeamId());
         this.filesRepository.save(file);
 
-        //변경이력 기록
         FileHistoryEntity fileHistory = new FileHistoryEntity();
         fileHistory.updateFileHistory(file, fileUpdate.getChangeDescription());
         fileHistoryRepository.save(fileHistory);
     }
-    @Override
-    public void updateLink(Integer id, String fileLink){
-        Files file=this.filesRepository.findById(id).orElseThrow();
-        file.updateLink(fileLink);
-        this.filesRepository.save(file);
-    }
+
     @Override
     public void deleteFile(Integer id) {//파일 삭제 메서드
         filesRepository.deleteById(id);
     }
+    /**
+     * S3에서 파일을 삭제합니다.
+     *
+     * @param filePath 파일 경로
+     * @throws GeneralException 파일 삭제 실패 시
+     */
     @Override
     public void deleteAtS3(String filePath) {
         try {
-            // S3에서 삭제 요청
             DeleteObjectRequest request = DeleteObjectRequest.builder()
                     .bucket(bucket)
                     .key(filePath)
@@ -110,6 +136,7 @@ public class FilesServiceImpl implements FilesService {
             log.info(String.format("[%s] deletion complete", filePath));
         } catch (S3Exception e) {
             log.error(e.awsErrorDetails().errorMessage());
+            throw new GeneralException(ErrorStatus._FILE_DELETE_FAILED.getCode(), "File delete failed", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
     @Override
@@ -117,76 +144,6 @@ public class FilesServiceImpl implements FilesService {
         file.setCreatedAt(LocalDateTime.now());
         file.setUpdatedAt(LocalDateTime.now());
         return filesRepository.save(file.toEntity()).getId();
-    }
-    @Override
-    public String upload(MultipartFile multipartFile, String dirName, Integer id, String fileType) throws IOException { // dirName의 디렉토리가 S3 Bucket 내부에 생성됨
-        File uploadFile = convert(multipartFile)
-                .orElseThrow(() -> new IllegalArgumentException("MultipartFile -> File 전환 실패"));
-        return upload(uploadFile, dirName, id, fileType);
-    }
-    @Override
-    public ResponseEntity<byte[]> download(String fileUrl) throws IOException {
-        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                .bucket(bucket)
-                .key(fileUrl)
-                .build();
-
-        try (ResponseInputStream<GetObjectResponse> s3Object = s3Client.getObject(getObjectRequest)) {
-            byte[] bytes = IOUtils.toByteArray(s3Object);
-
-            HttpHeaders httpHeaders = new HttpHeaders();
-            httpHeaders.setContentType(contentType(fileUrl));
-            httpHeaders.setContentLength(bytes.length);
-            String[] arr = fileUrl.split("/");
-            String type = arr[arr.length - 1];
-            String fileName = URLEncoder.encode(type, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
-            httpHeaders.setContentDispositionFormData("attachment", fileName);
-
-            return new ResponseEntity<>(bytes, httpHeaders, HttpStatus.OK);
-        }
-    }
-    private String upload(File uploadFile, String dirName, Integer id, String fileType) {
-        String fileName = dirName + id+"."+fileType;
-        String uploadImageUrl = putS3(uploadFile, fileName);
-        removeNewFile(uploadFile);  // convert()함수로 인해서 로컬에 생성된 File 삭제 (MultipartFile -> File 전환 하며 로컬에 파일 생성됨)
-        return uploadImageUrl;      // 업로드된 파일의 S3 URL 주소 반환
-    }
-    private void removeNewFile(File targetFile) {
-        if(targetFile.delete()) {
-            log.info("파일이 삭제되었습니다.");
-        }else {
-            log.info("파일이 삭제되지 못했습니다.");
-        }
-    }
-    private String putS3(File uploadFile, String fileName) {
-        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket(bucket)
-                .key(fileName)
-                .acl(ObjectCannedACL.PUBLIC_READ)
-                .build();
-
-        s3Client.putObject(putObjectRequest, RequestBody.fromFile(uploadFile));
-        return String.format("https://%s.s3.amazonaws.com/%s", bucket, fileName);
-    }
-    private Optional<File> convert(MultipartFile file) throws IOException {
-        File convertFile = new File(file.getOriginalFilename()); // 업로드한 파일의 이름
-        if (convertFile.createNewFile()) {
-            try (FileOutputStream fos = new FileOutputStream(convertFile)) {
-                fos.write(file.getBytes());
-            }
-            return Optional.of(convertFile);
-        }
-        return Optional.empty();
-    }
-    private MediaType contentType(String keyname) {
-        String[] arr = keyname.split("\\.");
-        String type = arr[arr.length - 1];
-        return switch (type) {
-            case "txt" -> MediaType.TEXT_PLAIN;
-            case "png" -> MediaType.IMAGE_PNG;
-            case "jpg" -> MediaType.IMAGE_JPEG;
-            default -> MediaType.APPLICATION_OCTET_STREAM;
-        };
     }
 
     //파일 히스토리 관리
@@ -231,15 +188,21 @@ public class FilesServiceImpl implements FilesService {
         }
     }
 
+    /**
+     * 파일을 이동합니다.
+     *
+     * @param source 원본 파일 경로
+     * @param target 대상 파일 경로
+     * @throws IOException 파일 이동 중 예외 발생 시
+     * @throws GeneralException 파일 이동 중 예외 발생 시
+     */
     @Override
     public void moveFile(String source, String target) throws IOException {
         try {
-            // Check input validity
             if (source == null || target == null) {
-                throw new IllegalArgumentException("Source or target must not be null");
+                throw new GeneralException(ErrorStatus._BAD_REQUEST.getCode(), "Source or target must not be null", HttpStatus.BAD_REQUEST);
             }
 
-            // Copy the file within the bucket
             CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
                     .sourceBucket(bucket)
                     .sourceKey(source)
@@ -249,7 +212,6 @@ public class FilesServiceImpl implements FilesService {
             s3Client.copyObject(copyObjectRequest);
             log.info("File copied successfully from {} to {}", source, target);
 
-            // Delete the original file
             DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
                     .bucket(bucket)
                     .key(source)
@@ -258,7 +220,8 @@ public class FilesServiceImpl implements FilesService {
             log.info("Original file {} deleted successfully", source);
         } catch (S3Exception e) {
             log.error("Error moving file from {} to {}", source, target, e);
-            throw new IOException("Failed to move file: " + e.getMessage(), e);
+            throw new GeneralException(ErrorStatus._INTERNAL_SERVER_ERROR.getCode(), "Failed to move file: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 }
