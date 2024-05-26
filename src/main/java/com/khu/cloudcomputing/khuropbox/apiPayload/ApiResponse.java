@@ -1,38 +1,41 @@
 package com.khu.cloudcomputing.khuropbox.apiPayload;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.khu.cloudcomputing.khuropbox.apiPayload.basecode.BaseCode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.khu.cloudcomputing.khuropbox.apiPayload.status.SuccessStatus;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
+import org.springframework.http.HttpStatus;
 
-@Getter
+@Data
 @AllArgsConstructor
-@JsonPropertyOrder({"isSuccess", "code", "message", "result"})
 public class ApiResponse<T> {
-
-    @JsonProperty("isSuccess")
-    private final Boolean isSuccess;
-    private final String code;
-    private final String message;
-    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String code;
+    private String message;
     private T result;
 
-
-     //성공한 경우 응답 생성
-
-    public static <T> ApiResponse<T> onSuccess(T result){
-        return new ApiResponse<>(true, SuccessStatus._OK.getCode() , SuccessStatus._OK.getMessage(), result);
+    public ApiResponse(SuccessStatus status, T result) {
+        this.code = status.getCode();
+        this.message = status.getMessage();
+        this.result = result != null ? result : (T) createEmptyJson();
     }
 
-    public static <T> ApiResponse<T> of(BaseCode code, T result){
-            return new ApiResponse<>(true, code.getReasonHttpStatus().getCode() , code.getReasonHttpStatus().getMessage(), result);
+    public ApiResponse(SuccessStatus status) {
+        this.code = status.getCode();
+        this.message = status.getMessage();
+        this.result = (T) createEmptyJson();
     }
 
-    // 실패한 경우 응답 생성
-    public static <T> ApiResponse<T> onFailure(String code, String message, T data){
-        return new ApiResponse<>(true, code, message, data);
+    public ApiResponse(HttpStatus httpStatus, String message, T result) {
+        this.code = String.valueOf(httpStatus.value());
+        this.message = message;
+        this.result = result != null ? result : (T) createEmptyJson();
+    }
+
+    private String createEmptyJson() {
+        try {
+            return new ObjectMapper().writeValueAsString(new Object());
+        } catch (Exception e) {
+            return "{}";
+        }
     }
 }
