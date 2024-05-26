@@ -2,9 +2,7 @@ package com.khu.cloudcomputing.khuropbox.team.service;
 
 import com.khu.cloudcomputing.khuropbox.auth.model.UserEntity;
 import com.khu.cloudcomputing.khuropbox.auth.persistence.UserRepository;
-import com.khu.cloudcomputing.khuropbox.team.dto.InsertTeamDTO;
-import com.khu.cloudcomputing.khuropbox.team.dto.TeamDTO;
-import com.khu.cloudcomputing.khuropbox.team.dto.UserTeamDTO;
+import com.khu.cloudcomputing.khuropbox.team.dto.*;
 import com.khu.cloudcomputing.khuropbox.team.entity.Team;
 import com.khu.cloudcomputing.khuropbox.team.repository.TeamRepository;
 import com.khu.cloudcomputing.khuropbox.team.repository.UserTeamRepository;
@@ -25,22 +23,32 @@ public class TeamServiceImpl implements TeamService {
     private final UserRepository userRepository;
     private final TeamRepository teamRepository;
     @Override
-    public List<TeamDTO> findMyTeam(String userName){
-        List<Team> list = userTeamRepository.findByUserName(userName);
-        List<TeamDTO> listDTO = new ArrayList<>();
-        for (Team team : list) {
-            listDTO.add(new TeamDTO(team));
+    public List<TeamRoleDTO> findMyTeam(String userName){
+        List<TeamRoleMapping> teamRoleMapping=userTeamRepository.findMyTeam(userName);
+        List<TeamRoleDTO> teamRole=new ArrayList<>();
+        for (TeamRoleMapping team:teamRoleMapping) {
+            TeamRoleDTO teamRoleDTO=new TeamRoleDTO(team);
+            teamRole.add(teamRoleDTO);
         }
-        return listDTO;
+        return teamRole;
     }
     @Override
-    public List<UserEntity> findTeamMember(Integer teamId){
-        return userTeamRepository.findTeamMember(teamId);
+    public List<UserRoleDTO> findTeamMember(Integer teamId){
+        List<UserRoleMapping> userRoleMapping=userTeamRepository.findTeamMember(teamId);
+        List<UserRoleDTO> userRole=new ArrayList<>();
+        for (UserRoleMapping user:userRoleMapping) {
+            UserRoleDTO userRoleDTO=new UserRoleDTO(user);
+            userRole.add(userRoleDTO);
+        }
+        return userRole;
     }
     @Override
     public Integer joinTeam(InsertTeamDTO info){
         Team team=teamRepository.findById(info.getTeam()).orElseThrow();
         UserEntity user=userRepository.findByUsername(info.getUserName());
+        if(user==null){
+            return -1;
+        }
         UserTeamDTO userTeam=new UserTeamDTO();
         userTeam.setUser(user);
         userTeam.setTeam(team);
@@ -53,13 +61,18 @@ public class TeamServiceImpl implements TeamService {
         UserTeamDTO userTeam=new UserTeamDTO();
         userTeam.setUser(user);
         userTeam.setTeam(teamRepository.findByTeamId(returnValue).orElseThrow());
-        userTeam.setRole("admin");
+        userTeam.setRole("owner");
         userTeamRepository.save(userTeam.toEntity());
         return returnValue;
     }
     @Override
-    public UserEntity findTeamAdmin(Integer teamId){
-        return userTeamRepository.findTeamAdmin(teamId);
+    public String findUserRole(String userId, Integer teamId){
+        return userTeamRepository.findByUser_IdAndTeam_teamId(userId, teamId).getRole();
+    }
+    @Override
+    public void updateRole(Integer teamId, String userName, String role){
+        if(role.equals("admin") || role.equals("customer"))
+            userTeamRepository.updateRole(teamId, userName, role);
     }
     @Override
     public void deleteByIndex(Integer teamId, String userId){

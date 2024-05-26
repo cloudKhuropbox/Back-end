@@ -5,9 +5,13 @@ import com.khu.cloudcomputing.khuropbox.auth.persistence.UserRepository;
 import com.khu.cloudcomputing.khuropbox.files.service.FilesService;
 import com.khu.cloudcomputing.khuropbox.team.dto.InsertTeamDTO;
 import com.khu.cloudcomputing.khuropbox.team.dto.TeamDTO;
+import com.khu.cloudcomputing.khuropbox.team.dto.UpdateRoleDTO;
+import com.khu.cloudcomputing.khuropbox.team.dto.UserRoleDTO;
 import com.khu.cloudcomputing.khuropbox.team.service.TeamService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.User;
+import org.springframework.data.relational.core.sql.In;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -28,21 +32,15 @@ public class TeamController {
     public ResponseEntity<?> MemberList(@PathVariable(value="teamId")Integer teamId){
         Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
         String id=authentication.getName();
-        List<UserEntity> members=teamService.findTeamMember(teamId);
-        if(members.contains(userRepository.findAllById(id).orElseThrow())){
-            return ResponseEntity.ok(members);
-        }
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        List<UserRoleDTO> members=teamService.findTeamMember(teamId);
+        return ResponseEntity.ok(members);
     }
-    @GetMapping("list/{userName}")
-    public ResponseEntity<?> List(@PathVariable(value = "userName")String userName){
+    @GetMapping("list")
+    public ResponseEntity<?> List(){
         Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
         String id=authentication.getName();
         UserEntity user=userRepository.findAllById(id).orElseThrow();
-        if(user.getUsername().equals(userName)){
-            return ResponseEntity.ok(teamService.findMyTeam(userName));
-        }
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        return ResponseEntity.ok(teamService.findMyTeam(user.getUsername()));
     }
     @PostMapping("create")
     public ResponseEntity<?> Create(@RequestBody TeamDTO teamDTO){
@@ -55,19 +53,33 @@ public class TeamController {
     public ResponseEntity<?> Join(@RequestBody InsertTeamDTO insertTeamDTO){
         Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
         String id=authentication.getName();
-        UserEntity admin=teamService.findTeamAdmin(insertTeamDTO.getTeam());
-        if(id.equals(admin.getId())) {
-            return ResponseEntity.ok(teamService.joinTeam(insertTeamDTO));
+        String role=teamService.findUserRole(id, insertTeamDTO.getTeam());
+        if(role.equals("admin") || role.equals("owner")) {
+            Integer index=teamService.joinTeam(insertTeamDTO);
+            if(index==-1)
+                return ResponseEntity.badRequest().build();
+            return ResponseEntity.ok(index);
         }
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
-    @PostMapping("leave")
-    public ResponseEntity<?> Leave(@RequestBody TeamDTO teamDTO){
-        List<UserEntity> members=teamService.findTeamMember(teamDTO.getTeamId());
+    @PostMapping("updaterole")
+    public ResponseEntity<?> UpdateRole(@RequestBody UpdateRoleDTO updateRoleDTO){
         Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
         String id=authentication.getName();
-        if(members.contains(userRepository.findAllById(id).orElseThrow())){
-            teamService.deleteByIndex(teamDTO.getTeamId(), id);
+        String role=teamService.findUserRole(id, updateRoleDTO.getTeamId());
+        if(role.equals("admin") || role.equals("owner")) {
+            teamService.updateRole(updateRoleDTO.getTeamId(), updateRoleDTO.getUserName(), updateRoleDTO.getRole());
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    }
+    @PostMapping("leave/{teamId}")
+    public ResponseEntity<?> Leave(@PathVariable(value="teamId") Integer teamId){
+        Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
+        String id=authentication.getName();
+        String role=teamService.findUserRole(id, teamId);
+        if(!role.equals("owner")) {
+            teamService.deleteByIndex(teamId, id);
             return ResponseEntity.ok().build();
         }
         return ResponseEntity.badRequest().build();
@@ -76,20 +88,24 @@ public class TeamController {
     public ResponseEntity<?> Exile(@RequestBody InsertTeamDTO deleteTeamDTO){
         Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
         String id=authentication.getName();
-        UserEntity admin=teamService.findTeamAdmin(deleteTeamDTO.getTeam());
-        if(id.equals(admin.getId())) {
-            teamService.deleteByName(deleteTeamDTO.getTeam(), deleteTeamDTO.getUserName());
-            return ResponseEntity.ok().build();
+        String role=teamService.findUserRole(id,deleteTeamDTO.getTeam());
+        String target=teamService.findUserRole(userRepository.findByUsername(deleteTeamDTO.getUserName()).getId(), deleteTeamDTO.getTeam());
+        if(role.equals("admin") || role.equals("owner")) {
+            if(target.equals("customer")) {
+                teamService.deleteByName(deleteTeamDTO.getTeam(), deleteTeamDTO.getUserName());
+                return ResponseEntity.ok().build();
+            }
+            return ResponseEntity.badRequest().build();
         }
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
-    @PostMapping("dissolution")
-    public ResponseEntity<?> Dissolution(@RequestBody TeamDTO teamDTO){
+    @PostMapping("dissolution/{teamId}")
+    public ResponseEntity<?> Dissolution(@PathVariable(value="teamId") Integer teamId){
         Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
         String id=authentication.getName();
-        UserEntity admin=teamService.findTeamAdmin(teamDTO.getTeamId());
-        if(id.equals(admin.getId())) {
-            teamService.deleteByTeamId(teamDTO.getTeamId());
+        String role=teamService.findUserRole(id, teamId);
+        if(role.equals("owner")) {
+            teamService.deleteByTeamId(teamId);
             return ResponseEntity.ok().build();
         }
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -101,7 +117,7 @@ public class TeamController {
                                    @RequestParam(required = false, defaultValue = "DESC", value = "sort") String sort){
         Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
         String id=authentication.getName();
-        List<UserEntity> members=teamService.findTeamMember(teamId);
+        List<UserRoleDTO> members=teamService.findTeamMember(teamId);
         if(members.contains(userRepository.findAllById(id).orElseThrow())) {
             return ResponseEntity.ok(filesService.findTeamFile(teamId, orderby, pageNum, sort));
         }

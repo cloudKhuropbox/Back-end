@@ -107,8 +107,9 @@ public class FilesServiceImpl implements FilesService {
     }
     @Override
     public Integer insertFile(FilesDTO file) {//파일 업로드 메서드
-        file.setCreatedAt(LocalDateTime.now());
-        file.setUpdatedAt(LocalDateTime.now());
+        LocalDateTime now=LocalDateTime.now();
+        file.setCreatedAt(now);
+        file.setUpdatedAt(now);
         return filesRepository.save(file.toEntity()).getId();
     }
     @Override
