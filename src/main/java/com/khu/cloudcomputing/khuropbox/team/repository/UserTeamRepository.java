@@ -31,4 +31,5 @@ public interface UserTeamRepository extends JpaRepository<UserTeam, Integer> {
     @Modifying
     @Query("delete from UserTeam u where u.team.teamId=:teamId")
     void deleteByTeamId(@Param(value="teamId")Integer teamId);
+    boolean existsByUserAndTeam(UserEntity user, Team team);
 }
