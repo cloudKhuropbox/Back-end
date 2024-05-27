@@ -1,7 +1,5 @@
 package com.khu.cloudcomputing.khuropbox.apiPayload;
 
-import com.khu.cloudcomputing.khuropbox.apiPayload.basecode.BaseErrorCode;
-import com.khu.cloudcomputing.khuropbox.apiPayload.dto.ErrorResponseDTO;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
