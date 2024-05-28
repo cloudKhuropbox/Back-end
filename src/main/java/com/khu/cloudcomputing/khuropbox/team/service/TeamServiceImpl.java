@@ -73,7 +73,9 @@ public class TeamServiceImpl implements TeamService {
         Team team = teamRepository.findById(info.getTeam())
                 .orElseThrow(() -> new GeneralException(ErrorStatus._TEAM_NOT_FOUND.getCode(), "Team not found", ErrorStatus._TEAM_NOT_FOUND.getHttpStatus()));
         UserEntity user = userRepository.findByUsername(info.getUserName());
-
+        if(user==null){
+            throw new GeneralException(ErrorStatus._USER_NOT_FOUND.getCode(), "User not found", ErrorStatus._USER_ALREADY_IN_TEAM.getHttpStatus());
+        }
         if (userTeamRepository.existsByUserAndTeam(user, team)) {
             throw new GeneralException(ErrorStatus._USER_ALREADY_IN_TEAM.getCode(), "User already in team", ErrorStatus._USER_ALREADY_IN_TEAM.getHttpStatus());
         }
@@ -100,7 +102,7 @@ public class TeamServiceImpl implements TeamService {
         userTeam.setUser(user);
         userTeam.setTeam(teamRepository.findByTeamId(teamId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus._TEAM_NOT_FOUND.getCode(), "Team not found", ErrorStatus._TEAM_NOT_FOUND.getHttpStatus())));
-        userTeam.setRole("admin");
+        userTeam.setRole("owner");
         userTeamRepository.save(userTeam.toEntity());
         return new ResponseEntity<>(teamId, SuccessStatus._TEAM_CREATED.getHttpStatus());
     }

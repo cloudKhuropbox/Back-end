@@ -1,5 +1,7 @@
 package com.khu.cloudcomputing.khuropbox.team.controller;
 
+import com.khu.cloudcomputing.khuropbox.apiPayload.ApiResponse;
+import com.khu.cloudcomputing.khuropbox.apiPayload.status.SuccessStatus;
 import com.khu.cloudcomputing.khuropbox.auth.model.UserEntity;
 import com.khu.cloudcomputing.khuropbox.auth.persistence.UserRepository;
 import com.khu.cloudcomputing.khuropbox.files.service.FilesService;
@@ -28,21 +30,21 @@ public class TeamController {
         Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
         String id=authentication.getName();
         List<UserRoleDTO> members=teamService.findTeamMember(teamId);
-        return ResponseEntity.ok(members);
+        return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._OK,members));
     }
     @GetMapping("list")
     public ResponseEntity<?> List(){
         Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
         String id=authentication.getName();
         UserEntity user=userRepository.findAllById(id).orElseThrow();
-        return ResponseEntity.ok(teamService.findMyTeam(user.getUsername()));
+        return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._OK,teamService.findMyTeam(user.getUsername())));
     }
     @PostMapping("create")
     public ResponseEntity<?> Create(@RequestBody TeamDTO teamDTO){
         Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
         String id=authentication.getName();
         UserEntity user=userRepository.findAllById(id).orElseThrow();
-        return ResponseEntity.ok(teamService.createTeam(teamDTO, user));
+        return teamService.createTeam(teamDTO, user);
     }
     @PostMapping("join")
     public ResponseEntity<?> Join(@RequestBody InsertTeamDTO insertTeamDTO){
@@ -52,18 +54,24 @@ public class TeamController {
         if(role.equals("admin") || role.equals("owner")) {
             return teamService.joinTeam(insertTeamDTO);
         }
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(HttpStatus.FORBIDDEN, "Forbidden", null));
     }
     @PostMapping("updaterole")
     public ResponseEntity<?> UpdateRole(@RequestBody UpdateRoleDTO updateRoleDTO){
         Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
         String id=authentication.getName();
         String role=teamService.findUserRole(id, updateRoleDTO.getTeamId());
+        String objectRole=teamService.findUserRole(userRepository.findByUsername(updateRoleDTO.getUserName()).getId(), updateRoleDTO.getTeamId());
         if(role.equals("admin") || role.equals("owner")) {
+            if(updateRoleDTO.getRole().equals("owner"))
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse<>(HttpStatus.BAD_REQUEST, "Bad Request: Can't update role as 'owner'.", null));
+            else if(objectRole.equals("owner")){
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse<>(HttpStatus.BAD_REQUEST, "Bad Request: role is 'owner'.", null));
+            }
             teamService.updateRole(updateRoleDTO.getTeamId(), updateRoleDTO.getUserName(), updateRoleDTO.getRole());
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._USER_UPDATED));
         }
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(HttpStatus.FORBIDDEN, "Forbidden", null));
     }
     @PostMapping("leave/{teamId}")
     public ResponseEntity<?> Leave(@PathVariable(value="teamId") Integer teamId){
@@ -71,10 +79,9 @@ public class TeamController {
         String id=authentication.getName();
         String role=teamService.findUserRole(id, teamId);
         if(!role.equals("owner")) {
-            teamService.deleteByIndex(teamId, id);
-            return ResponseEntity.ok().build();
+            return teamService.deleteByIndex(teamId, id);
         }
-        return ResponseEntity.badRequest().build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse<>(HttpStatus.BAD_REQUEST, "Bad Request: Your role is 'owner'.", null));
     }
     @PostMapping("exile")
     public ResponseEntity<?> Exile(@RequestBody InsertTeamDTO deleteTeamDTO){
@@ -84,12 +91,11 @@ public class TeamController {
         String target=teamService.findUserRole(userRepository.findByUsername(deleteTeamDTO.getUserName()).getId(), deleteTeamDTO.getTeam());
         if(role.equals("admin") || role.equals("owner")) {
             if(target.equals("customer")) {
-                teamService.deleteByName(deleteTeamDTO.getTeam(), deleteTeamDTO.getUserName());
-                return ResponseEntity.ok().build();
+                return teamService.deleteByName(deleteTeamDTO.getTeam(), deleteTeamDTO.getUserName());
             }
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse<>(HttpStatus.BAD_REQUEST, "Bad Request: Target is not 'customer'.", null));
         }
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(HttpStatus.FORBIDDEN, "Forbidden", null));
     }
     @PostMapping("dissolution/{teamId}")
     public ResponseEntity<?> Dissolution(@PathVariable(value="teamId") Integer teamId){
@@ -97,10 +103,9 @@ public class TeamController {
         String id=authentication.getName();
         String role=teamService.findUserRole(id, teamId);
         if(role.equals("owner")) {
-            teamService.deleteByTeamId(teamId);
-            return ResponseEntity.ok().build();
+            return teamService.deleteByTeamId(teamId);
         }
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(HttpStatus.FORBIDDEN, "Forbidden", null));
     }
     @GetMapping("filelist/{teamId}")
     public ResponseEntity<?> Files(@PathVariable(value="teamId")Integer teamId,
@@ -108,13 +113,10 @@ public class TeamController {
                                    @RequestParam(required = false, defaultValue = "updatedAt", value = "orderby") String orderby,
                                    @RequestParam(required = false, defaultValue = "DESC", value = "sort") String sort,
                                    @RequestParam(required = false, defaultValue = "", value = "search")String search,
-                                   @RequestParam(required = false, defaultValue = "false", value = "isRecycleBin")boolean isRecycleBin){
+                                   @RequestParam(required = false, defaultValue = "false", value = "recycleBin")boolean recycleBin){
         Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
         String id=authentication.getName();
         List<UserRoleDTO> members=teamService.findTeamMember(teamId);
-        if(members.contains(userRepository.findAllById(id).orElseThrow())) {
-            return ResponseEntity.ok(filesService.findTeamFile(teamId, orderby, pageNum, sort,search,isRecycleBin));
-        }
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._OK,filesService.findTeamFile(teamId, orderby, pageNum, sort,search,recycleBin)));
     }
 }

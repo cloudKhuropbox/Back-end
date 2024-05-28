@@ -19,7 +19,7 @@ public interface UserTeamRepository extends JpaRepository<UserTeam, Integer> {
     @Query("select u.team as team, u.role as role from UserTeam u left outer join Team t on u.team.teamId=t.teamId " +
             "left outer join UserEntity e on u.user.username=e.username where u.user.username=:userName")
     List<TeamRoleMapping> findMyTeam(@Param(value="userName")String userName);
-    @Query("select u.user from UserTeam u left outer join Team t on u.team.teamId=t.teamId " +
+    @Query("select u.user as user, u.role as role from UserTeam u left outer join Team t on u.team.teamId=t.teamId " +
             "left outer join UserEntity e on u.user.username=e.username where u.team.teamId=:teamId")
     List<UserRoleMapping> findTeamMember(@Param(value="teamId") Integer teamId);
     RoleMapping findByUser_IdAndTeam_teamId(String userId, Integer teamId);
