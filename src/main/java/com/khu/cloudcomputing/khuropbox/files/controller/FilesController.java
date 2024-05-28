@@ -29,13 +29,15 @@ public class FilesController {
     private final FilesService filesService;
     private final AwsService awsService;
 
-    @GetMapping({"/"})
+    @GetMapping({"/list"})
     public ResponseEntity<ApiResponse<Page<FilesDTO>>> Files(@RequestParam(required = false, defaultValue = "0", value = "page") int pageNum,
                                                              @RequestParam(required = false, defaultValue = "updatedAt", value = "orderBy") String orderBy,
-                                                             @RequestParam(required = false, defaultValue = "DESC", value = "sort")String sort) {
+                                                             @RequestParam(required = false, defaultValue = "DESC", value = "sort")String sort,
+                                                             @RequestParam(required = false, defaultValue = "", value = "search")String search,
+                                                             @RequestParam(required = false, defaultValue = "false", value = "search")boolean isRecycleBin) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String id = authentication.getName();
-        Page<FilesDTO> files = filesService.findUserPage(id, orderBy, pageNum, sort);
+        Page<FilesDTO> files = filesService.findUserPage(id, orderBy, pageNum, sort,search,isRecycleBin);
         return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._OK, files));
     }
 
@@ -52,7 +54,6 @@ public class FilesController {
 
     @PostMapping("/get-upload-url")
     public ResponseEntity<ApiResponse<String>> getUploadUrl(@RequestBody Map<String, String> params) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String dirName = params.get("dirName");
         Integer id = Integer.valueOf(params.get("id"));
         String fileType = params.get("fileType");
@@ -79,7 +80,28 @@ public class FilesController {
         filesService.updateFile(fileUpdate);
         return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._FILE_UPDATED));
     }
-
+    @PostMapping("recyclebin/{fileId}")
+    public ResponseEntity<ApiResponse<String>> RecycleBin(@PathVariable(value = "fileId") Integer fileId){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String id = authentication.getName();
+        FilesDTO file = filesService.findById(fileId);
+        if (id.equals(file.getOwner().getId())) {
+            filesService.recycleBinFile(fileId);
+            return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._FILE_UPDATED));
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(HttpStatus.FORBIDDEN, "Forbidden", null));
+    }
+    @PostMapping("restore/{fileId}")
+    public ResponseEntity<ApiResponse<String>> Restore(@PathVariable(value = "fileId") Integer fileId){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String id = authentication.getName();
+        FilesDTO file = filesService.findById(fileId);
+        if (id.equals(file.getOwner().getId())) {
+            filesService.restoreFile(fileId);
+            return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._FILE_UPDATED));
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(HttpStatus.FORBIDDEN, "Forbidden", null));
+    }
     @PostMapping("delete/{fileId}")
     public ResponseEntity<ApiResponse<String>> Delete(@PathVariable(value = "fileId") Integer fileId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

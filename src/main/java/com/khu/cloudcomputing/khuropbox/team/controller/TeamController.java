@@ -106,12 +106,14 @@ public class TeamController {
     public ResponseEntity<?> Files(@PathVariable(value="teamId")Integer teamId,
                                    @RequestParam(required = false, defaultValue = "0", value = "page") int pageNum,
                                    @RequestParam(required = false, defaultValue = "updatedAt", value = "orderby") String orderby,
-                                   @RequestParam(required = false, defaultValue = "DESC", value = "sort") String sort){
+                                   @RequestParam(required = false, defaultValue = "DESC", value = "sort") String sort,
+                                   @RequestParam(required = false, defaultValue = "", value = "search")String search,
+                                   @RequestParam(required = false, defaultValue = "false", value = "isRecycleBin")boolean isRecycleBin){
         Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
         String id=authentication.getName();
         List<UserRoleDTO> members=teamService.findTeamMember(teamId);
         if(members.contains(userRepository.findAllById(id).orElseThrow())) {
-            return ResponseEntity.ok(filesService.findTeamFile(teamId, orderby, pageNum, sort));
+            return ResponseEntity.ok(filesService.findTeamFile(teamId, orderby, pageNum, sort,search,isRecycleBin));
         }
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
