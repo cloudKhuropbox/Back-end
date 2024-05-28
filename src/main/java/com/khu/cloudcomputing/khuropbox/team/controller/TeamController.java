@@ -29,8 +29,12 @@ public class TeamController {
     public ResponseEntity<?> MemberList(@PathVariable(value="teamId")Integer teamId){
         Authentication authentication=SecurityContextHolder.getContext().getAuthentication();
         String id=authentication.getName();
-        List<UserRoleDTO> members=teamService.findTeamMember(teamId);
-        return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._OK,members));
+        String role=teamService.findUserRole(id, teamId);
+        if(role!=null) {
+            List<UserRoleDTO> members = teamService.findTeamMember(teamId);
+            return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._OK, members));
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(HttpStatus.FORBIDDEN, "Forbidden", null));
     }
     @GetMapping("list")
     public ResponseEntity<?> List(){
@@ -52,6 +56,9 @@ public class TeamController {
         String id=authentication.getName();
         String role=teamService.findUserRole(id, insertTeamDTO.getTeam());
         if(role.equals("admin") || role.equals("owner")) {
+            if(insertTeamDTO.getRole().equals("owner")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse<>(HttpStatus.BAD_REQUEST, "Bad Request: Should not be 'owner'.", null));
+            }
             return teamService.joinTeam(insertTeamDTO);
         }
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(HttpStatus.FORBIDDEN, "Forbidden", null));
