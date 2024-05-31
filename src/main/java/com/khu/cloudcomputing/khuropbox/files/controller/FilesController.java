@@ -2,6 +2,7 @@ package com.khu.cloudcomputing.khuropbox.files.controller;
 
 import com.khu.cloudcomputing.khuropbox.apiPayload.ApiResponse;
 import com.khu.cloudcomputing.khuropbox.apiPayload.status.SuccessStatus;
+import com.khu.cloudcomputing.khuropbox.auth.persistence.UserRepository;
 import com.khu.cloudcomputing.khuropbox.configuration.AwsService;
 import com.khu.cloudcomputing.khuropbox.files.dto.FileHistoryDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesDTO;
@@ -28,14 +29,17 @@ import java.util.Map;
 public class FilesController {
     private final FilesService filesService;
     private final AwsService awsService;
+    private final UserRepository userRepository;
 
-    @GetMapping({"/"})
+    @GetMapping({"/list"})
     public ResponseEntity<ApiResponse<Page<FilesDTO>>> Files(@RequestParam(required = false, defaultValue = "0", value = "page") int pageNum,
                                                              @RequestParam(required = false, defaultValue = "updatedAt", value = "orderBy") String orderBy,
-                                                             @RequestParam(required = false, defaultValue = "DESC", value = "sort")String sort) {
+                                                             @RequestParam(required = false, defaultValue = "DESC", value = "sort")String sort,
+                                                             @RequestParam(required = false, defaultValue = "", value = "search")String search,
+                                                             @RequestParam(required = false, defaultValue = "false", value = "recycleBin")boolean recycleBin) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String id = authentication.getName();
-        Page<FilesDTO> files = filesService.findUserPage(id, orderBy, pageNum, sort);
+        Page<FilesDTO> files = filesService.findUserPage(id, orderBy, pageNum, sort,search,recycleBin);
         return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._OK, files));
     }
 
@@ -52,12 +56,20 @@ public class FilesController {
 
     @PostMapping("/get-upload-url")
     public ResponseEntity<ApiResponse<String>> getUploadUrl(@RequestBody Map<String, String> params) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String dirName = params.get("dirName");
         Integer id = Integer.valueOf(params.get("id"));
         String fileType = params.get("fileType");
         String url = awsService.generateUploadPresignedUrl(dirName, id, fileType);
         return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._OK, url));
+    }
+
+    @PostMapping("/upload-file")
+    public ResponseEntity<ApiResponse<Integer>> UploadFile(@RequestBody FilesDTO filesDTO) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String id = authentication.getName();
+        filesDTO.setOwner(userRepository.findAllById(id).orElseThrow());
+        filesDTO.setIsRecycleBin(false);
+        return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._OK,filesService.insertFile(filesDTO)));
     }
 
     @GetMapping("download/{fileId}")
@@ -76,10 +88,37 @@ public class FilesController {
 
     @PostMapping("update")
     public ResponseEntity<ApiResponse<String>> Update(@RequestBody FilesUpdateDTO fileUpdate) {
-        filesService.updateFile(fileUpdate);
-        return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._FILE_UPDATED));
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String id = authentication.getName();
+        FilesDTO file = filesService.findById(fileUpdate.getId());
+        if (id.equals(file.getOwner().getId())) {
+            filesService.updateFile(fileUpdate);
+            return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._FILE_UPDATED));
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(HttpStatus.FORBIDDEN, "Forbidden", null));
     }
-
+    @PostMapping("recyclebin/{fileId}")
+    public ResponseEntity<ApiResponse<String>> RecycleBin(@PathVariable(value = "fileId") Integer fileId){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String id = authentication.getName();
+        FilesDTO file = filesService.findById(fileId);
+        if (id.equals(file.getOwner().getId())) {
+            filesService.recycleBinFile(fileId);
+            return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._FILE_UPDATED));
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(HttpStatus.FORBIDDEN, "Forbidden", null));
+    }
+    @PostMapping("restore/{fileId}")
+    public ResponseEntity<ApiResponse<String>> Restore(@PathVariable(value = "fileId") Integer fileId){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String id = authentication.getName();
+        FilesDTO file = filesService.findById(fileId);
+        if (id.equals(file.getOwner().getId())) {
+            filesService.restoreFile(fileId);
+            return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._FILE_UPDATED));
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(HttpStatus.FORBIDDEN, "Forbidden", null));
+    }
     @PostMapping("delete/{fileId}")
     public ResponseEntity<ApiResponse<String>> Delete(@PathVariable(value = "fileId") Integer fileId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

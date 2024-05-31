@@ -21,6 +21,7 @@ public class FilesDTO {
     private LocalDateTime updatedAt;
     private UserEntity owner;
     private Integer teamId;
+    private Boolean isRecycleBin;
 
     public FilesDTO(Files entity){
         this.id=entity.getId();
@@ -32,6 +33,7 @@ public class FilesDTO {
         this.updatedAt=entity.getUpdatedAt();
         this.owner=entity.getOwner();
         this.teamId=entity.getTeamId();
+        this.isRecycleBin=entity.getIsRecycleBin();
     }
 
     public Files toEntity(){
