@@ -80,21 +80,21 @@ public class FilesServiceImpl implements FilesService {
      * @return 페이지 단위로 파일 목록
      */
     @Override
-    public Page<FilesDTO> findUserPage(String userId, String orderby, int pageNum, String sort, String search, Boolean isRecycleBin) {
+    public Page<FilesDTO> findUserPage(String userId, String orderby, int pageNum, String sort) {
         Pageable pageable = (sort.equals("ASC")) ?
                 PageRequest.of(pageNum, 20, Sort.by(Sort.Direction.ASC, orderby))
                 : PageRequest.of(pageNum, 20, Sort.by(Sort.Direction.DESC, orderby));
 
-        return filesRepository.findAllByOwner_IdAndFileNameContainingAndIsRecycleBin(pageable, userId,search,isRecycleBin).map(FilesDTO::new);
+        return filesRepository.findAllByOwner_Id(pageable, userId).map(FilesDTO::new);
     }
 
     @Override
-    public Page<FilesDTO> findTeamFile(Integer teamId, String orderby, int pageNum, String sort, String search,Boolean isRecycleBin) {
+    public Page<FilesDTO> findTeamFile(Integer teamId, String orderby, int pageNum, String sort) {
         Pageable pageable = (sort.equals("ASC")) ?
                 PageRequest.of(pageNum, 20, Sort.by(Sort.Direction.ASC, orderby))
                 : PageRequest.of(pageNum, 20, Sort.by(Sort.Direction.DESC, orderby));
 
-        return filesRepository.findAllByTeamIdAndFileNameContainingAndIsRecycleBin(pageable, teamId,search,isRecycleBin).map(FilesDTO::new);
+        return filesRepository.findAllByTeamId(pageable, teamId).map(FilesDTO::new);
     }
     /**
      * 파일 메타데이터를 업데이트합니다.
@@ -106,26 +106,14 @@ public class FilesServiceImpl implements FilesService {
     public void updateFile(FilesUpdateDTO fileUpdate) {
         Files file = this.filesRepository.findById(fileUpdate.getId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus._FILE_NOT_FOUND.getCode(), "File not found", HttpStatus.NOT_FOUND));
-        file.update(fileUpdate.getFileName(), LocalDateTime.now(), fileUpdate.getTeamId());
+        file.update(fileUpdate.getFileName(), fileUpdate.getFileLink(), LocalDateTime.now(), fileUpdate.getTeamId());
         this.filesRepository.save(file);
+
         FileHistoryEntity fileHistory = new FileHistoryEntity();
         fileHistory.updateFileHistory(file, fileUpdate.getChangeDescription());
         fileHistoryRepository.save(fileHistory);
     }
-    @Override
-    public void recycleBinFile(Integer id){
-        Files file = this.filesRepository.findById(id)
-                .orElseThrow(() -> new GeneralException(ErrorStatus._FILE_NOT_FOUND.getCode(), "File not found", HttpStatus.NOT_FOUND));
-        file.recycleBin();
-        this.filesRepository.save(file);
-    }
-    @Override
-    public void restoreFile(Integer id){
-        Files file = this.filesRepository.findById(id)
-                .orElseThrow(() -> new GeneralException(ErrorStatus._FILE_NOT_FOUND.getCode(), "File not found", HttpStatus.NOT_FOUND));
-        file.restore();
-        this.filesRepository.save(file);
-    }
+
     @Override
     public void deleteFile(Integer id) {//파일 삭제 메서드
         filesRepository.deleteById(id);

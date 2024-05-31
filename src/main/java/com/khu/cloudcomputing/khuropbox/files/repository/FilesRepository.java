@@ -11,6 +11,7 @@ public interface FilesRepository extends JpaRepository<Files, Integer> {
     Optional<Files> findById(Integer id);
     void deleteById(Integer id);
     //정렬
-    Page<Files> findAllByTeamIdAndFileNameContainingAndIsRecycleBin(Pageable pageable, Integer teamId, String fileName, Boolean isRecycleBin);
-    Page<Files> findAllByOwner_IdAndFileNameContainingAndIsRecycleBin(Pageable pageable, String userId, String fileName, Boolean isRecycleBin);
+
+    Page<Files> findAllByTeamId(Pageable pageable, Integer teamId);
+    Page<Files> findAllByOwner_Id(Pageable pageable, String userId);
 }

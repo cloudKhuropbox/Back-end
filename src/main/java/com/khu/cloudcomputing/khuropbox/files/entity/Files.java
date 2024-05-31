@@ -29,20 +29,12 @@ public class Files {
     @JoinColumn(name="userId")
     private UserEntity owner;
     private Integer teamId;
-    private Boolean isRecycleBin;
 
-    public Files update(String fileName, LocalDateTime updatedAt, Integer teamId){
+    public Files update(String fileName, String fileLink, LocalDateTime updatedAt, Integer teamId){
         this.fileName=fileName;
+        this.fileLink=fileLink;
         this.updatedAt=updatedAt;
         this.teamId=teamId;
-        return this;
-    }
-    public Files recycleBin(){
-        this.isRecycleBin=true;
-        return this;
-    }
-    public Files restore(){
-        this.isRecycleBin=false;
         return this;
     }
     public Files updateLink(String fileLink){

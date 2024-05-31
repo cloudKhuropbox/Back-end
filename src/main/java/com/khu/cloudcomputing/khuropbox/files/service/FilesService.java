@@ -15,12 +15,10 @@ import java.util.List;
 
 public interface FilesService{
     FilesDTO findById(Integer id);
-    Page<FilesDTO> findUserPage(String userId, String orderby, int pageNum, String sort,String search,Boolean isRecycleBin);
-    Page<FilesDTO> findTeamFile(Integer teamId, String orderby, int pageNum, String sort,String search, Boolean isRecycleBin);
+    Page<FilesDTO> findUserPage(String userId, String orderby, int pageNum, String sort);
+    Page<FilesDTO> findTeamFile(Integer teamId, String orderby, int pageNum, String sort);
     //updateFile변경
     void updateFile(FilesUpdateDTO filesUpdateDTO);
-    void recycleBinFile(Integer id);
-    void restoreFile(Integer id);
     void deleteFile(Integer id);
     void deleteAtS3(String filePath);
     Integer insertFile(FilesDTO file);
