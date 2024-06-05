@@ -19,7 +19,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 @Service
 public class AwsService {
@@ -91,7 +90,7 @@ public class AwsService {
                 .multipartUpload(CompletedMultipartUpload.builder().parts(parts).build()));
     }
 
-    public AbortMultipartUploadResponse abortMultipartUpload(String bucket, String key, String uploadId) {
+    public AbortMultipartUploadResponse abortMultipartUpload(String key, String uploadId) {
         return s3Client.abortMultipartUpload(request -> request
                 .bucket(bucket)
                 .key(key)

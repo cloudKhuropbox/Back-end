@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import software.amazon.awssdk.services.s3.model.AbortMultipartUploadResponse;
 import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadResponse;
 import software.amazon.awssdk.services.s3.model.CompletedPart;
 
@@ -74,17 +75,11 @@ public class FilesController {
     }
 
     @PostMapping("/abort-upload")
-    public ResponseEntity<ApiResponse<String>> abortUpload(
-            @RequestParam String bucket,
+    public ResponseEntity<AbortMultipartUploadResponse> abortUpload(
             @RequestParam String key,
             @RequestParam String uploadId) {
-        try {
-            awsService.abortMultipartUpload(bucket, key, uploadId);
-            return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._OK, "Upload aborted successfully."));
-        } catch (Exception e) {
-            log.error("Failed to abort upload: ", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR, "Error aborting upload", null));
-        }
+            AbortMultipartUploadResponse response = awsService.abortMultipartUpload(key, uploadId);
+            return ResponseEntity.ok(response);
     }
 
 
