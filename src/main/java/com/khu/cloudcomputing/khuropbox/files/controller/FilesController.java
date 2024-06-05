@@ -73,6 +73,20 @@ public class FilesController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/abort-upload")
+    public ResponseEntity<ApiResponse<String>> abortUpload(
+            @RequestParam String bucket,
+            @RequestParam String key,
+            @RequestParam String uploadId) {
+        try {
+            awsService.abortMultipartUpload(bucket, key, uploadId);
+            return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._OK, "Upload aborted successfully."));
+        } catch (Exception e) {
+            log.error("Failed to abort upload: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR, "Error aborting upload", null));
+        }
+    }
+
 
     @GetMapping("download/{fileId}")
     public ResponseEntity<ApiResponse<String>> Download(@PathVariable(value = "fileId") Integer fileId) throws IOException {
