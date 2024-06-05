@@ -2,7 +2,7 @@ package com.khu.cloudcomputing.khuropbox.files.controller;
 
 import com.khu.cloudcomputing.khuropbox.apiPayload.ApiResponse;
 import com.khu.cloudcomputing.khuropbox.apiPayload.status.SuccessStatus;
-import com.khu.cloudcomputing.khuropbox.configuration.AwsService;
+import com.khu.cloudcomputing.khuropbox.configuration.aws.AwsService;
 import com.khu.cloudcomputing.khuropbox.files.dto.FileHistoryDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FileMultipartUploadUrlDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesDTO;
@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @RestController

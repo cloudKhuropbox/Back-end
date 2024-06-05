@@ -1,30 +1,37 @@
-package com.khu.cloudcomputing.khuropbox.configuration;
+package com.khu.cloudcomputing.khuropbox.configuration.aws;
 
 
 import com.khu.cloudcomputing.khuropbox.files.dto.FileMultipartUploadUrlDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
+import software.amazon.awssdk.core.BytesWrapper;
+import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.net.URL;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 @Service
 public class AwsService {
     private final S3Client s3Client;
+    private final S3AsyncClient s3AsyncClient;
     private final S3Presigner s3Presigner;
     private final String bucket;
     private final String region;
 
-    public AwsService(S3Client s3Client,S3Presigner s3Presigner, @Value("${cloud.aws.s3.bucket}") String bucket, @Value("${cloud.aws.region.static}") String region) {
+    public AwsService(S3Client s3Client,S3AsyncClient s3AsyncClient,S3Presigner s3Presigner, @Value("${cloud.aws.s3.bucket}") String bucket, @Value("${cloud.aws.region.static}") String region) {
         this.s3Client = s3Client;
+        this.s3AsyncClient = s3AsyncClient;
         this.s3Presigner = s3Presigner;
         this.bucket = bucket;
         this.region = region;
@@ -107,6 +114,28 @@ public class AwsService {
         }
 
         return (int) correctedPartCount;
+    }
+
+    public Mono<String> readFileAsString(String keyName) {
+        return Mono.fromFuture(
+                getObjectBytes(keyName)
+                        .thenApply(String::new)
+        );
+    }
+
+    public Mono<byte[]> readFileAsByteArray(String keyName) {
+        return Mono.fromFuture(
+                getObjectBytes(keyName)
+        );
+    }
+
+    public CompletableFuture<byte[]> getObjectBytes(String keyName) {
+        return s3AsyncClient.getObject(GetObjectRequest.builder()
+                                .bucket(bucket)
+                                .key(keyName)
+                                .build(),
+                        AsyncResponseTransformer.toBytes())
+                .thenApply(BytesWrapper::asByteArray);
     }
 
 }
