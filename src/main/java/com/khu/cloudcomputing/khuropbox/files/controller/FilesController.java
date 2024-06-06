@@ -1,5 +1,6 @@
 package com.khu.cloudcomputing.khuropbox.files.controller;
 
+import com.amazonaws.Request;
 import com.khu.cloudcomputing.khuropbox.apiPayload.ApiResponse;
 import com.khu.cloudcomputing.khuropbox.apiPayload.status.SuccessStatus;
 import com.khu.cloudcomputing.khuropbox.auth.persistence.UserRepository;
@@ -70,8 +71,10 @@ public class FilesController {
     public ResponseEntity<CompleteMultipartUploadResponse> completeMultipartUpload(
             @RequestParam String key,
             @RequestParam String uploadId,
-            @RequestBody List<CompletedPart> parts) {
+            @RequestBody List<CompletedPart> parts,
+            @RequestBody FilesDTO filesDTO) {
         CompleteMultipartUploadResponse response = awsService.completeMultipartUpload(key, uploadId, parts);
+        filesService.insertFile(filesDTO);
         return ResponseEntity.ok(response);
     }
     @PostMapping("/abort-upload")

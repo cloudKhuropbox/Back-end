@@ -1,4 +1,4 @@
-package com.khu.cloudcomputing.khuropbox.summurygenerator.dto;
+package com.khu.cloudcomputing.khuropbox.summarygenerator.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

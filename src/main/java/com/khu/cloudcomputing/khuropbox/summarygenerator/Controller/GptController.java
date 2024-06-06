@@ -1,7 +1,7 @@
-package com.khu.cloudcomputing.khuropbox.summurygenerator.Controller;
+package com.khu.cloudcomputing.khuropbox.summarygenerator.Controller;
 
-import com.khu.cloudcomputing.khuropbox.summurygenerator.dto.GptResponseDTO;
-import com.khu.cloudcomputing.khuropbox.summurygenerator.service.GptService;
+import com.khu.cloudcomputing.khuropbox.summarygenerator.dto.GptResponseDTO;
+import com.khu.cloudcomputing.khuropbox.summarygenerator.service.GptService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

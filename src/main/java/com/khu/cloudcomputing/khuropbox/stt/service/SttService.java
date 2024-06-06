@@ -13,6 +13,7 @@ import com.khu.cloudcomputing.khuropbox.stt.dto.SttResponseDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.configurationprocessor.json.JSONException;
+import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
@@ -30,7 +32,6 @@ public class SttService {
     private final FilesRepository filesRepository;
     private final AwsService awsService;
     private final WebClient webClient;
-
     private final String url;
 
     public SttService(ReturnzeroAuthService returnzeroAuthService, FilesRepository filesRepository, AwsService awsService, WebClient webClient, @Value("${returnzero.apiUrl}") String url) {
@@ -102,5 +103,4 @@ public class SttService {
 
         return sendPostRequest(requestDTO);
     }
-
 }

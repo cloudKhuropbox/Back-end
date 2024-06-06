@@ -1,17 +1,13 @@
-package com.khu.cloudcomputing.khuropbox.summurygenerator.service;
+package com.khu.cloudcomputing.khuropbox.summarygenerator.service;
 
 import com.khu.cloudcomputing.khuropbox.configuration.aws.AwsService;
-import com.khu.cloudcomputing.khuropbox.summurygenerator.dto.GptRequestDTO;
-import com.khu.cloudcomputing.khuropbox.summurygenerator.dto.GptResponseDTO;
-import com.khu.cloudcomputing.khuropbox.summurygenerator.dto.Message;
+import com.khu.cloudcomputing.khuropbox.summarygenerator.dto.GptRequestDTO;
+import com.khu.cloudcomputing.khuropbox.summarygenerator.dto.GptResponseDTO;
+import com.khu.cloudcomputing.khuropbox.summarygenerator.dto.Message;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
-import software.amazon.awssdk.core.async.AsyncResponseTransformer;
-import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 @Service
 public class GptService {
@@ -22,7 +18,7 @@ public class GptService {
     private final String url;
     private final String apiKey;
 
-    public GptService(AwsService awsService, WebClient webClient, @Value("${openai.api.url}")String url, @Value("${openai.seceret-key}")String apiKey) {
+    public GptService(AwsService awsService, WebClient webClient, @Value("${openai.api.url}")String url, @Value("${openai.secret-key}")String apiKey) {
         this.awsService = awsService;
         this.webClient = webClient;
         this.url = url;

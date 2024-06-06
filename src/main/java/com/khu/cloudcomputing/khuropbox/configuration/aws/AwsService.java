@@ -44,10 +44,6 @@ public class AwsService {
     }
 
     public URL generateDownloadPresignedUrl(String fileUrl) {
-        var presigner = S3Presigner.builder()
-                .region(Region.of(region))
-                .build();
-
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucket)
                 .key(fileUrl)
@@ -58,7 +54,7 @@ public class AwsService {
                 .getObjectRequest(getObjectRequest)
                 .build();
 
-        return presigner.presignGetObject(presignRequest).url();
+        return s3Presigner.presignGetObject(presignRequest).url();
     }
 
     public String generateWriteOnlyMultipartPresignedUrl(String key, Duration duration, String uploadId, int partNumber) {

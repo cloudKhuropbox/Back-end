@@ -48,6 +48,7 @@ public class CommentsController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userId = authentication.getName();
         comment.setUser(userRepository.findAllById(userId).orElseThrow());
+        comment.setFileId(comment.getFileId());
         Integer commentId = commentsService.createComment(comment);
         return ResponseEntity.status(SuccessStatus._COMMENT_CREATED.getHttpStatus())
                 .body(new ApiResponse<>(SuccessStatus._COMMENT_CREATED, commentId));

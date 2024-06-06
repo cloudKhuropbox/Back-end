@@ -2,6 +2,7 @@ package com.khu.cloudcomputing.khuropbox.files.entity;
 
 import com.khu.cloudcomputing.khuropbox.auth.model.UserEntity;
 import com.khu.cloudcomputing.khuropbox.stt.entity.ScriptEntity;
+import com.khu.cloudcomputing.khuropbox.summarygenerator.entity.GptSummaryEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.relational.core.sql.In;
@@ -56,4 +57,7 @@ public class Files {
 
     @OneToOne(mappedBy = "file", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private ScriptEntity scriptEntity;
+
+    @OneToOne(mappedBy = "file", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private GptSummaryEntity summaryEntity;
 }

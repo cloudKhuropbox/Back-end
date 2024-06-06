@@ -1,28 +1,22 @@
-package com.khu.cloudcomputing.khuropbox.stt.entity;
+package com.khu.cloudcomputing.khuropbox.summarygenerator.entity;
 
 import com.khu.cloudcomputing.khuropbox.files.entity.Files;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-import jakarta.persistence.*;
-
-@Getter
-@Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Getter
 @Entity
-@Table(name = "scripts")
-public class ScriptEntity {
+public class GptSummaryEntity {
     @Id
     private Integer fileId;
-
-    private String requestId;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "file_id")
     private Files file;
 
-    private String scriptContent;
+    private String summary;
 }
