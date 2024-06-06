@@ -3,8 +3,9 @@ package com.khu.cloudcomputing.khuropbox.files.controller;
 import com.khu.cloudcomputing.khuropbox.apiPayload.ApiResponse;
 import com.khu.cloudcomputing.khuropbox.apiPayload.status.SuccessStatus;
 import com.khu.cloudcomputing.khuropbox.auth.persistence.UserRepository;
-import com.khu.cloudcomputing.khuropbox.configuration.AwsService;
+import com.khu.cloudcomputing.khuropbox.configuration.aws.AwsService;
 import com.khu.cloudcomputing.khuropbox.files.dto.FileHistoryDTO;
+import com.khu.cloudcomputing.khuropbox.files.dto.FileMultipartUploadUrlDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesUpdateDTO;
 import com.khu.cloudcomputing.khuropbox.files.service.FilesService;
@@ -16,11 +17,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import software.amazon.awssdk.services.s3.model.AbortMultipartUploadResponse;
+import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadResponse;
+import software.amazon.awssdk.services.s3.model.CompletedPart;
 
 import java.io.IOException;
 import java.net.URL;
+import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -42,7 +46,6 @@ public class FilesController {
         Page<FilesDTO> files = filesService.findUserPage(id, orderBy, pageNum, sort,search,recycleBin);
         return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._OK, files));
     }
-
     @GetMapping("info/{fileId}")
     public ResponseEntity<ApiResponse<FilesDTO>> FilesId(@PathVariable(value = "fileId") Integer fileId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -53,25 +56,31 @@ public class FilesController {
         }
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(HttpStatus.FORBIDDEN, "Forbidden", null));
     }
-
-    @PostMapping("/get-upload-url")
-    public ResponseEntity<ApiResponse<String>> getUploadUrl(@RequestBody Map<String, String> params) {
-        String dirName = params.get("dirName");
-        Integer id = Integer.valueOf(params.get("id"));
-        String fileType = params.get("fileType");
-        String url = awsService.generateUploadPresignedUrl(dirName, id, fileType);
-        return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._OK, url));
+    @PostMapping("/start-upload")
+    public ResponseEntity<List<FileMultipartUploadUrlDTO>> startMultipartUpload(
+            @RequestParam String key,
+            @RequestParam long fileSize) {
+        int partCount = awsService.calculateMultipartCount(fileSize, 10);
+        String uploadId = awsService.createMultipartUpload(key).uploadId();
+        List<FileMultipartUploadUrlDTO> presignedUrls = awsService.generateWriteOnlyMultipartPresignedUrls(
+                key, Duration.ofMinutes(60), uploadId, partCount);
+        return ResponseEntity.ok(presignedUrls);
     }
-
-    @PostMapping("/upload-file")
-    public ResponseEntity<ApiResponse<Integer>> UploadFile(@RequestBody FilesDTO filesDTO) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String id = authentication.getName();
-        filesDTO.setOwner(userRepository.findAllById(id).orElseThrow());
-        filesDTO.setIsRecycleBin(false);
-        return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._OK,filesService.insertFile(filesDTO)));
+    @PostMapping("/complete-upload")
+    public ResponseEntity<CompleteMultipartUploadResponse> completeMultipartUpload(
+            @RequestParam String key,
+            @RequestParam String uploadId,
+            @RequestBody List<CompletedPart> parts) {
+        CompleteMultipartUploadResponse response = awsService.completeMultipartUpload(key, uploadId, parts);
+        return ResponseEntity.ok(response);
     }
-
+    @PostMapping("/abort-upload")
+    public ResponseEntity<AbortMultipartUploadResponse> abortUpload(
+            @RequestParam String key,
+            @RequestParam String uploadId) {
+        AbortMultipartUploadResponse response = awsService.abortMultipartUpload(key, uploadId);
+        return ResponseEntity.ok(response);
+    }
     @GetMapping("download/{fileId}")
     public ResponseEntity<ApiResponse<String>> Download(@PathVariable(value = "fileId") Integer fileId) throws IOException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -85,7 +94,6 @@ public class FilesController {
         }
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(HttpStatus.FORBIDDEN, "Forbidden", null));
     }
-
     @PostMapping("update")
     public ResponseEntity<ApiResponse<String>> Update(@RequestBody FilesUpdateDTO fileUpdate) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

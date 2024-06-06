@@ -1,6 +1,7 @@
 package com.khu.cloudcomputing.khuropbox.files.entity;
 
 import com.khu.cloudcomputing.khuropbox.auth.model.UserEntity;
+import com.khu.cloudcomputing.khuropbox.stt.entity.ScriptEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.relational.core.sql.In;
@@ -25,8 +26,8 @@ public class Files {
     private String fileType;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    @ManyToOne(fetch=FetchType.EAGER)
-    @JoinColumn(name="userId")
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "userId")
     private UserEntity owner;
     private Integer teamId;
     private Boolean isRecycleBin;
@@ -52,4 +53,7 @@ public class Files {
 
     @OneToMany(mappedBy = "file", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<FileHistoryEntity> fileHistory = new ArrayList<FileHistoryEntity>();
+
+    @OneToOne(mappedBy = "file", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private ScriptEntity scriptEntity;
 }
