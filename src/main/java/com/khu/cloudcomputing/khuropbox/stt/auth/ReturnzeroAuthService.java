@@ -83,7 +83,6 @@ public class ReturnzeroAuthService {
         authTokenRepository.save(tokenStorage);
     }
 
-
     public synchronized String checkValidToken() throws IOException, JSONException {
         AuthTokenEntity token = getToken();
         if (token == null || token.getExpiresAt().isBefore(Instant.now())) {  // 여유 시간을 두고 갱신

@@ -1,4 +1,4 @@
-package com.khu.cloudcomputing.khuropbox.auth.controller.controller;
+package com.khu.cloudcomputing.khuropbox.auth.controller;
 
 import com.khu.cloudcomputing.khuropbox.auth.dto.ResponseDTO;
 import com.khu.cloudcomputing.khuropbox.auth.dto.UserDTO;

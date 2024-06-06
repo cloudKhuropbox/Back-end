@@ -16,12 +16,12 @@ import jakarta.persistence.*;
 @Table(name = "scripts")
 public class ScriptEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Integer fileId;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "file_id")
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Files file;
 
-    private String scriptContent;
+    private String requestId;
+
+    private String Results;
 }

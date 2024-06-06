@@ -59,4 +59,9 @@ public class GptService {
                 .retrieve()
                 .bodyToMono(GptResponseDTO.class);
     }
+
+
+    private String extractSummary(GptResponseDTO response) {
+        return response.getMessage().getContent();
+    }
 }

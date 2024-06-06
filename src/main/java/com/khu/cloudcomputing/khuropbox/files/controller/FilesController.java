@@ -82,7 +82,6 @@ public class FilesController {
             return ResponseEntity.ok(response);
     }
 
-
     @GetMapping("download/{fileId}")
     public ResponseEntity<ApiResponse<String>> Download(@PathVariable(value = "fileId") Integer fileId) throws IOException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

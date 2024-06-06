@@ -6,10 +6,7 @@ import com.khu.cloudcomputing.khuropbox.configuration.aws.AwsService;
 import com.khu.cloudcomputing.khuropbox.files.entity.Files;
 import com.khu.cloudcomputing.khuropbox.files.repository.FilesRepository;
 import com.khu.cloudcomputing.khuropbox.stt.auth.ReturnzeroAuthService;
-import com.khu.cloudcomputing.khuropbox.stt.dto.DiarizationConfig;
-import com.khu.cloudcomputing.khuropbox.stt.dto.SttRequestConfig;
-import com.khu.cloudcomputing.khuropbox.stt.dto.SttRequestDTO;
-import com.khu.cloudcomputing.khuropbox.stt.dto.SttResponseDTO;
+import com.khu.cloudcomputing.khuropbox.stt.dto.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.configurationprocessor.json.JSONException;
@@ -31,14 +28,15 @@ public class SttService {
     private final AwsService awsService;
     private final WebClient webClient;
 
-    private final String url;
+    private final String apiUrl;
 
-    public SttService(ReturnzeroAuthService returnzeroAuthService, FilesRepository filesRepository, AwsService awsService, WebClient webClient, @Value("${returnzero.apiUrl}") String url) {
+    public SttService(ReturnzeroAuthService returnzeroAuthService, FilesRepository filesRepository, AwsService awsService, WebClient webClient,
+                      @Value("${returnzero.apiUrl}") String url) {
         this.returnzeroAuthService = returnzeroAuthService;
         this.filesRepository = filesRepository;
         this.awsService = awsService;
         this.webClient = webClient;
-        this.url = url;
+        this.apiUrl = url;
     }
 
     private static final List<String> SUPPORTED_FORMATS = Arrays.asList("mp4", "m4a", "mp3", "amr", "flac", "wav");
@@ -85,7 +83,7 @@ public class SttService {
     public Mono<SttResponseDTO> sendPostRequest(SttRequestDTO sttRequestDTO) throws IOException, JSONException {
         String token = returnzeroAuthService.checkValidToken();
         return webClient.post()
-                .uri(url)
+                .uri(apiUrl)
                 .accept(MediaType.APPLICATION_JSON)
                 .header("Authorization", token)
                 .contentType(MediaType.MULTIPART_FORM_DATA)
@@ -94,6 +92,15 @@ public class SttService {
                 .bodyToMono(SttResponseDTO.class);
     }
 
+    public Mono<SttResultDTO> sendGetRequest(String requestId) throws IOException, JSONException {
+        String token = returnzeroAuthService.checkValidToken();
+        return webClient.get()
+                .uri(apiUrl+"/"+requestId)
+                .accept(MediaType.APPLICATION_JSON)
+                .header("Authorization", token)
+                .retrieve()
+                .bodyToMono(SttResultDTO.class);
+    }
 
     public Mono<SttResponseDTO> transcribe(int fileId,int speakerCount) throws IOException, JSONException {
         Mono<byte[]> fileData = getFileData(fileId);
@@ -101,6 +108,10 @@ public class SttService {
         SttRequestDTO requestDTO = buildSttRequestDTO(fileData, sttRequestConfig);
 
         return sendPostRequest(requestDTO);
+    }
+
+    public Mono<SttResultDTO> getTranscribeResult(String requestId) throws IOException, JSONException {
+        return sendGetRequest(requestId);
     }
 
 }
