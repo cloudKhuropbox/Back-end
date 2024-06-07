@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface SttRepository extends JpaRepository<ScriptEntity, Integer> {
-    ScriptEntity findByTranscribeId(String transcribeId);
+    Optional<ScriptEntity> findByTranscribeId(String transcribeId);
 }

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.core.BytesWrapper;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -131,6 +132,17 @@ public class AwsService {
                                 .build(),
                         AsyncResponseTransformer.toBytes())
                 .thenApply(BytesWrapper::asByteArray);
+    }
+
+    public Mono<String> uploadFile(String key, byte[] content) {
+        return Mono.fromCallable(() -> {
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .build();
+            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(content));
+            return key;
+        });
     }
 
 }

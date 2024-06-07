@@ -30,16 +30,14 @@ public class SttService {
     private final WebClient webClient;
     private final String url;
     private final SttRepository sttRepository;
-    private final ScriptEntity scriptEntity;
 
-    public SttService(ReturnzeroAuthService returnzeroAuthService, FilesRepository filesRepository, AwsService awsService, WebClient webClient, @Value("${returnzero.apiUrl}") String url, SttRepository sttRepository, ScriptEntity scriptEntity) {
+    public SttService(ReturnzeroAuthService returnzeroAuthService, FilesRepository filesRepository, AwsService awsService, WebClient webClient, @Value("${returnzero.apiUrl}") String url, SttRepository sttRepository) {
         this.returnzeroAuthService = returnzeroAuthService;
         this.filesRepository = filesRepository;
         this.awsService = awsService;
         this.webClient = webClient;
         this.url = url;
         this.sttRepository = sttRepository;
-        this.scriptEntity =scriptEntity;
     }
 
     private static final List<String> SUPPORTED_FORMATS = Arrays.asList("mp4", "m4a", "mp3", "amr", "flac", "wav");
@@ -52,7 +50,7 @@ public class SttService {
             throw new GeneralException(ErrorStatus._UNSUPPORTED_MEDIA_TYPE.getCode(), "Unsupported file format", ErrorStatus._UNSUPPORTED_MEDIA_TYPE.getHttpStatus());
         }
 
-        return awsService.readFileAsByteArray(file.getFileLink())
+        return awsService.readFileAsByteArray(file.getFileKey())
                 .onErrorMap(IOException.class, e -> new GeneralException(ErrorStatus._INTERNAL_SERVER_ERROR.getCode(), "Error reading file from S3", ErrorStatus._INTERNAL_SERVER_ERROR.getHttpStatus()));
     }
 
@@ -119,9 +117,13 @@ public class SttService {
                                             .header("Authorization", "Bearer " + token)
                                             .retrieve()
                                             .bodyToMono(TranscribeResultDTO.class)
-                                            .flatMap(transcribeResultDTO -> {
-                                                Optional<ScriptEntity> scriptEntity = sttRepository.findByTranscribeId(transcribeId);
-                                                if
+                                            .flatMap(transcribeResult -> {
+                                                Optional<ScriptEntity> scriptEntityOptional = sttRepository.findByTranscribeId(transcribeId);
+                                                scriptEntityOptional.ifPresent(scriptEntity -> {
+                                                    scriptEntity.setScriptContent(transcribeResult.getUtterances().toString());
+                                                    sttRepository.save(scriptEntity);
+                                                });
+                                                return Mono.just(transcribeResult).cast(Object.class);
                                             });
                                 } else {
                                     return webClient.get()

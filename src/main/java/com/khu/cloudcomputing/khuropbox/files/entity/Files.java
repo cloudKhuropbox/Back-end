@@ -24,7 +24,7 @@ public class Files {
     private Integer id;
     private String fileName;
     @NotNull
-    private String fileLink;
+    private String fileKey;
     @NotNull
     @Size(min=0)
     private Long fileSize;
@@ -56,8 +56,8 @@ public class Files {
         this.isRecycleBin=false;
         return this;
     }
-    public Files updateLink(String fileLink){
-        this.fileLink=fileLink;
+    public Files updateKey(String fileKey){
+        this.fileKey=fileKey;
         return this;
     }
 

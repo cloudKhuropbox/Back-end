@@ -91,7 +91,7 @@ public class FilesController {
         String id = authentication.getName();
         FilesDTO file = filesService.findById(fileId);
         if (id.equals(file.getOwner().getId())) {
-            String filePath = file.getFileLink().substring(50);
+            String filePath = file.getFileKey();
             log.info(filePath);
             URL presignedUrl = awsService.generateDownloadPresignedUrl(filePath);
             return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._OK, presignedUrl.toString()));
@@ -137,7 +137,7 @@ public class FilesController {
         String id = authentication.getName();
         FilesDTO file = filesService.findById(fileId);
         if (id.equals(file.getOwner().getId())) {
-            String filePath = file.getFileLink().substring(50);
+            String filePath = file.getFileKey();
             filesService.deleteAtS3(filePath);
             filesService.deleteFile(fileId);
             return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._FILE_DELETED));
@@ -158,7 +158,7 @@ public class FilesController {
         FilesDTO file = filesService.findById(fileId);
 
         if (id.equals(file.getOwner().getId())) {
-            String objectKey = file.getFileLink().substring(50); // Adjust the substring index based on your actual file path structure
+            String objectKey = file.getFileKey(); // Adjust the substring index based on your actual file path structure
             URL presignedUrl = awsService.generateDownloadPresignedUrl(objectKey);
             return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._OK, presignedUrl.toString()));
         }

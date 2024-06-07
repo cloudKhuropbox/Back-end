@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.Optional;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -18,5 +20,5 @@ public class GptSummaryEntity {
     @JoinColumn(name = "file_id")
     private Files file;
 
-    private String summary;
+    private String s3FileKey;
 }

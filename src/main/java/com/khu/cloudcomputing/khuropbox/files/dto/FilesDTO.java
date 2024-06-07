@@ -19,7 +19,7 @@ public class FilesDTO {
     @NotBlank
     private String fileName;
     @NotBlank
-    private String fileLink;
+    private String fileKey;
     @NotNull
     private Long fileSize;
     private String fileType;
@@ -37,7 +37,7 @@ public class FilesDTO {
     public FilesDTO(Files entity){
         this.id=entity.getId();
         this.fileName=entity.getFileName();
-        this.fileLink=entity.getFileLink();
+        this.fileKey=entity.getFileKey();
         this.fileSize=entity.getFileSize();
         this.fileType=entity.getFileType();
         this.createdAt=entity.getCreatedAt();
@@ -50,7 +50,7 @@ public class FilesDTO {
     public Files toEntity(){
         return Files.builder()
                 .fileName(fileName)
-                .fileLink(fileLink)
+                .fileKey(fileKey)
                 .fileSize(fileSize)
                 .fileType(fileType)
                 .createdAt(createdAt)
