@@ -1,7 +1,5 @@
 package com.khu.cloudcomputing.khuropbox.stt.controller;
 
-import com.khu.cloudcomputing.khuropbox.apiPayload.status.ErrorStatus;
-import com.khu.cloudcomputing.khuropbox.stt.dto.ErrorResponseDTO;
 import com.khu.cloudcomputing.khuropbox.stt.dto.TranscribeResultDTO;
 import com.khu.cloudcomputing.khuropbox.stt.dto.TranscribeStatusDTO;
 import com.khu.cloudcomputing.khuropbox.stt.entity.ScriptEntity;
@@ -30,14 +28,14 @@ public class SttRequestController {
 
 
     @PostMapping("/{fileId}")
-    public Mono<ResponseEntity<?>> transcribeFile(@PathVariable Integer fileId, @RequestParam int speakerCount) {
+    public Mono<ResponseEntity<String>> transcribeFile(@PathVariable Integer fileId, @RequestParam int speakerCount) {
         return sttService.transcribe(fileId, speakerCount)
                 .map(response -> {
                     ScriptEntity scriptEntity = new ScriptEntity();
                     scriptEntity.setFileId(fileId);
                     scriptEntity.setTranscribeId(response.getTranscribeId());
                     sttRepository.save(scriptEntity);
-                    return ResponseEntity.ok();
+                    return ResponseEntity.ok("{\"transcribeId\":\"" + response.getTranscribeId() + "\"}");
                 })
                 .onErrorResume(e -> {
                     log.error("Error during transcription request: ", e);

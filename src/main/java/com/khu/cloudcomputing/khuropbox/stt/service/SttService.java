@@ -7,6 +7,8 @@ import com.khu.cloudcomputing.khuropbox.files.entity.Files;
 import com.khu.cloudcomputing.khuropbox.files.repository.FilesRepository;
 import com.khu.cloudcomputing.khuropbox.stt.auth.ReturnzeroAuthService;
 import com.khu.cloudcomputing.khuropbox.stt.dto.*;
+import com.khu.cloudcomputing.khuropbox.stt.entity.ScriptEntity;
+import com.khu.cloudcomputing.khuropbox.stt.repository.SttRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -17,6 +19,7 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -26,13 +29,17 @@ public class SttService {
     private final AwsService awsService;
     private final WebClient webClient;
     private final String url;
+    private final SttRepository sttRepository;
+    private final ScriptEntity scriptEntity;
 
-    public SttService(ReturnzeroAuthService returnzeroAuthService, FilesRepository filesRepository, AwsService awsService, WebClient webClient, @Value("${returnzero.apiUrl}") String url) {
+    public SttService(ReturnzeroAuthService returnzeroAuthService, FilesRepository filesRepository, AwsService awsService, WebClient webClient, @Value("${returnzero.apiUrl}") String url, SttRepository sttRepository, ScriptEntity scriptEntity) {
         this.returnzeroAuthService = returnzeroAuthService;
         this.filesRepository = filesRepository;
         this.awsService = awsService;
         this.webClient = webClient;
         this.url = url;
+        this.sttRepository = sttRepository;
+        this.scriptEntity =scriptEntity;
     }
 
     private static final List<String> SUPPORTED_FORMATS = Arrays.asList("mp4", "m4a", "mp3", "amr", "flac", "wav");
@@ -112,7 +119,10 @@ public class SttService {
                                             .header("Authorization", "Bearer " + token)
                                             .retrieve()
                                             .bodyToMono(TranscribeResultDTO.class)
-                                            .cast(Object.class);
+                                            .flatMap(transcribeResultDTO -> {
+                                                Optional<ScriptEntity> scriptEntity = sttRepository.findByTranscribeId(transcribeId);
+                                                if
+                                            });
                                 } else {
                                     return webClient.get()
                                             .uri(url + "/" + transcribeId)
