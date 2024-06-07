@@ -1,5 +1,5 @@
 package com.khu.cloudcomputing.khuropbox.team.entity;
 
-public interface RoleMapping {
-    Role getRole();
+public enum Role {
+    customer, admin, owner;
 }

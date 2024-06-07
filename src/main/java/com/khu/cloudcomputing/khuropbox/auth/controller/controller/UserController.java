@@ -5,6 +5,7 @@ import com.khu.cloudcomputing.khuropbox.auth.dto.UserDTO;
 import com.khu.cloudcomputing.khuropbox.auth.model.UserEntity;
 import com.khu.cloudcomputing.khuropbox.auth.security.TokenProvider;
 import com.khu.cloudcomputing.khuropbox.auth.service.UserService;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -29,7 +30,7 @@ public class UserController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(@RequestBody UserDTO userDTO){
+    public ResponseEntity<?> registerUser(@Valid @RequestBody UserDTO userDTO){
         try{
             if(userDTO==null||userDTO.getPassword()==null){
                 throw new RuntimeException("Invalid password value");
@@ -55,7 +56,7 @@ public class UserController {
     }
     
     @PostMapping("/signin")
-    public ResponseEntity<?> authenticate(@RequestBody UserDTO userDTO){
+    public ResponseEntity<?> authenticate(@Valid @RequestBody UserDTO userDTO){
         UserEntity user = userService.getByCredentials(
                 userDTO.getUsername(),
                 userDTO.getPassword(),

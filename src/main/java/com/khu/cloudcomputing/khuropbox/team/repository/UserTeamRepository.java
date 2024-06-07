@@ -3,6 +3,7 @@ package com.khu.cloudcomputing.khuropbox.team.repository;
 import com.khu.cloudcomputing.khuropbox.auth.model.UserEntity;
 import com.khu.cloudcomputing.khuropbox.team.dto.TeamRoleMapping;
 import com.khu.cloudcomputing.khuropbox.team.dto.UserRoleMapping;
+import com.khu.cloudcomputing.khuropbox.team.entity.Role;
 import com.khu.cloudcomputing.khuropbox.team.entity.RoleMapping;
 import com.khu.cloudcomputing.khuropbox.team.entity.Team;
 import com.khu.cloudcomputing.khuropbox.team.entity.UserTeam;
@@ -25,7 +26,7 @@ public interface UserTeamRepository extends JpaRepository<UserTeam, Integer> {
     RoleMapping findByUser_IdAndTeam_teamId(String userId, Integer teamId);
     @Modifying
     @Query("update UserTeam u set u.role=:role where u.user.username=:userName and u.team.teamId=:teamId")
-    void updateRole(@Param(value="teamId")Integer teamId, @Param(value="userName")String userName, @Param(value="role")String role);
+    void updateRole(@Param(value="teamId")Integer teamId, @Param(value="userName")String userName, @Param(value="role")Role role);
     @Modifying
     @Query("delete from UserTeam u where u.team.teamId=:teamId and u.user.id=:userId")
     void deleteByIndex(@Param(value="teamId")Integer teamId, @Param(value="userId")String userId);

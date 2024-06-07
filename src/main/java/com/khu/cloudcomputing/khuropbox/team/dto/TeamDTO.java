@@ -1,6 +1,7 @@
 package com.khu.cloudcomputing.khuropbox.team.dto;
 
 import com.khu.cloudcomputing.khuropbox.team.entity.Team;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -10,6 +11,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class TeamDTO {
     private Integer teamId;
+    @NotNull
     private String teamName;
     public TeamDTO(Team entity){
         this.teamId=entity.getTeamId();

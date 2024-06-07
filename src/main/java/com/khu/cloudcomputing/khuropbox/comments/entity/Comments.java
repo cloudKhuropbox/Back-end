@@ -2,7 +2,9 @@ package com.khu.cloudcomputing.khuropbox.comments.entity;
 
 import com.khu.cloudcomputing.khuropbox.auth.model.UserEntity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 
@@ -17,9 +19,14 @@ public class Comments {
     private Integer id;
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name="userId")
+    @NotNull
     private UserEntity user;
+    @NotNull
     private Integer fileId;
+    @NotNull
     private String comment;
+    @NotNull
+    @DateTimeFormat(pattern="yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
     private Boolean updated;
     private Integer replyId;

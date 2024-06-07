@@ -6,22 +6,15 @@ import com.khu.cloudcomputing.khuropbox.configuration.aws.AwsService;
 import com.khu.cloudcomputing.khuropbox.files.entity.Files;
 import com.khu.cloudcomputing.khuropbox.files.repository.FilesRepository;
 import com.khu.cloudcomputing.khuropbox.stt.auth.ReturnzeroAuthService;
-import com.khu.cloudcomputing.khuropbox.stt.dto.DiarizationConfig;
-import com.khu.cloudcomputing.khuropbox.stt.dto.SttRequestConfig;
-import com.khu.cloudcomputing.khuropbox.stt.dto.SttRequestDTO;
-import com.khu.cloudcomputing.khuropbox.stt.dto.SttResponseDTO;
+import com.khu.cloudcomputing.khuropbox.stt.dto.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.configurationprocessor.json.JSONException;
-import org.springframework.boot.configurationprocessor.json.JSONObject;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
@@ -44,19 +37,16 @@ public class SttService {
 
     private static final List<String> SUPPORTED_FORMATS = Arrays.asList("mp4", "m4a", "mp3", "amr", "flac", "wav");
 
-
-    //s3에서 파일을 찾아서 바이너리로 변환(파일이 없거나 api에서 처리하지 못하는 파일 타입이면 여기서 거름)
-    public Mono<byte[]> getFileData(Integer fileId) throws GeneralException {
+    public Mono<byte[]> getFileData(Integer fileId) {
         Files file = filesRepository.findById(fileId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus._FILE_NOT_FOUND.getCode(), "File not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new GeneralException(ErrorStatus._FILE_NOT_FOUND.getCode(), "File not found", ErrorStatus._FILE_NOT_FOUND.getHttpStatus()));
 
-        // 파일 형식 검증
         if (!isSupportedFormat(file.getFileType())) {
-            throw new GeneralException(ErrorStatus._UNSUPPORTED_MEDIA_TYPE.getCode(), "Unsupported file format", HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+            throw new GeneralException(ErrorStatus._UNSUPPORTED_MEDIA_TYPE.getCode(), "Unsupported file format", ErrorStatus._UNSUPPORTED_MEDIA_TYPE.getHttpStatus());
         }
 
-        // S3에서 파일 가져오기
-        return awsService.readFileAsByteArray(file.getFileLink());
+        return awsService.readFileAsByteArray(file.getFileLink())
+                .onErrorMap(IOException.class, e -> new GeneralException(ErrorStatus._INTERNAL_SERVER_ERROR.getCode(), "Error reading file from S3", ErrorStatus._INTERNAL_SERVER_ERROR.getHttpStatus()));
     }
 
     private boolean isSupportedFormat(String fileType) {
@@ -81,26 +71,60 @@ public class SttService {
                 .build();
     }
 
-
-    //api 요청담당-엔드포인트, 헤더설정->요청 전송
-    public Mono<SttResponseDTO> sendPostRequest(SttRequestDTO sttRequestDTO) throws IOException, JSONException {
-        String token = returnzeroAuthService.checkValidToken();
-        return webClient.post()
-                .uri(url)
-                .accept(MediaType.APPLICATION_JSON)
-                .header("Authorization", token)
-                .contentType(MediaType.MULTIPART_FORM_DATA)
-                .bodyValue(sttRequestDTO)
-                .retrieve()
-                .bodyToMono(SttResponseDTO.class);
+    // 비동기적으로 토큰을 확인한 후에 요청을 보내도록 수정
+    public Mono<TranscribeResponseDTO> sendPostRequest(SttRequestDTO sttRequestDTO) {
+        return returnzeroAuthService.checkValidToken()
+                .flatMap(token -> webClient.post()
+                        .uri(url)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", token)
+                        .contentType(MediaType.MULTIPART_FORM_DATA)
+                        .bodyValue(sttRequestDTO)
+                        .retrieve()
+                        .bodyToMono(TranscribeResponseDTO.class)
+                        .onErrorMap(IOException.class, e -> new GeneralException(ErrorStatus._TRANSCRIBE_REQUEST_FAILED.getCode(), "Error sending post request", ErrorStatus._TRANSCRIBE_REQUEST_FAILED.getHttpStatus()))
+                        .onErrorMap(org.springframework.boot.configurationprocessor.json.JSONException.class, e -> new GeneralException(ErrorStatus._TRANSCRIBE_REQUEST_FAILED.getCode(), "Error parsing JSON response", ErrorStatus._TRANSCRIBE_REQUEST_FAILED.getHttpStatus())));
     }
 
-
-    public Mono<SttResponseDTO> transcribe(int fileId,int speakerCount) throws IOException, JSONException {
+    public Mono<TranscribeResponseDTO> transcribe(int fileId, int speakerCount) {
         Mono<byte[]> fileData = getFileData(fileId);
         SttRequestConfig sttRequestConfig = buildSttRequestConfig(speakerCount);
         SttRequestDTO requestDTO = buildSttRequestDTO(fileData, sttRequestConfig);
 
         return sendPostRequest(requestDTO);
+    }
+
+    // 비동기적으로 토큰을 확인한 후 요청을 보내도록 수정
+    public Mono<Object> pollTranscription(String transcribeId) {
+        return returnzeroAuthService.checkValidToken()
+                .flatMap(token -> webClient.get()
+                        .uri(url + "/" + transcribeId)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .retrieve()
+                        .bodyToMono(String.class)
+                        .flatMap(response -> {
+                            try {
+                                if (response.contains("\"status\":\"completed\"")) {
+                                    return webClient.get()
+                                            .uri(url + "/" + transcribeId)
+                                            .accept(MediaType.APPLICATION_JSON)
+                                            .header("Authorization", "Bearer " + token)
+                                            .retrieve()
+                                            .bodyToMono(TranscribeResultDTO.class)
+                                            .cast(Object.class);
+                                } else {
+                                    return webClient.get()
+                                            .uri(url + "/" + transcribeId)
+                                            .accept(MediaType.APPLICATION_JSON)
+                                            .header("Authorization", "Bearer " + token)
+                                            .retrieve()
+                                            .bodyToMono(TranscribeStatusDTO.class)
+                                            .cast(Object.class);
+                                }
+                            } catch (Exception e) {
+                                return Mono.error(new GeneralException(ErrorStatus._TRANSCRIBE_POLLING_FAILED.getCode(), "Error processing response", ErrorStatus._TRANSCRIBE_POLLING_FAILED.getHttpStatus()));
+                            }
+                        }));
     }
 }

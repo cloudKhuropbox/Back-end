@@ -3,5 +3,8 @@ package com.khu.cloudcomputing.khuropbox.stt.repository;
 import com.khu.cloudcomputing.khuropbox.stt.entity.ScriptEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ScriptRepository extends JpaRepository<ScriptEntity, Integer> {
+import java.util.Optional;
+
+public interface SttRepository extends JpaRepository<ScriptEntity, Integer> {
+    Optional<ScriptEntity> findByTranscribeId(String transcribeId);
 }

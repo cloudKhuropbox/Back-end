@@ -6,6 +6,7 @@ import com.khu.cloudcomputing.khuropbox.apiPayload.status.SuccessStatus;
 import com.khu.cloudcomputing.khuropbox.auth.model.UserEntity;
 import com.khu.cloudcomputing.khuropbox.auth.persistence.UserRepository;
 import com.khu.cloudcomputing.khuropbox.team.dto.*;
+import com.khu.cloudcomputing.khuropbox.team.entity.Role;
 import com.khu.cloudcomputing.khuropbox.team.entity.Team;
 import com.khu.cloudcomputing.khuropbox.team.repository.TeamRepository;
 import com.khu.cloudcomputing.khuropbox.team.repository.UserTeamRepository;
@@ -102,7 +103,7 @@ public class TeamServiceImpl implements TeamService {
         userTeam.setUser(user);
         userTeam.setTeam(teamRepository.findByTeamId(teamId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus._TEAM_NOT_FOUND.getCode(), "Team not found", ErrorStatus._TEAM_NOT_FOUND.getHttpStatus())));
-        userTeam.setRole("owner");
+        userTeam.setRole(Role.owner);
         userTeamRepository.save(userTeam.toEntity());
         return new ResponseEntity<>(teamId, SuccessStatus._TEAM_CREATED.getHttpStatus());
     }
@@ -114,12 +115,12 @@ public class TeamServiceImpl implements TeamService {
      * @return 사용자 엔티티
      */
     @Override
-    public String findUserRole(String userId, Integer teamId){
+    public Role findUserRole(String userId, Integer teamId){
         return userTeamRepository.findByUser_IdAndTeam_teamId(userId, teamId).getRole();
     }
     @Override
-    public void updateRole(Integer teamId, String userName, String role){
-        if(role.equals("admin") || role.equals("customer"))
+    public void updateRole(Integer teamId, String userName, Role role){
+        if(role.equals(Role.admin) || role.equals(Role.owner))
             userTeamRepository.updateRole(teamId, userName, role);
     }
     /**

@@ -2,6 +2,7 @@ package com.khu.cloudcomputing.khuropbox.auth.model;
 
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,7 +23,7 @@ public class UserEntity {
 
     @Column(nullable = false)
     private String username;
-
+    @NotNull
     private String password;
     private String role;
     private String authProvider; // 이후 OAuth에서 사용

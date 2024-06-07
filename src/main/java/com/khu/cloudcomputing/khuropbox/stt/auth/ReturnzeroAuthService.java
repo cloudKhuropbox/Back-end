@@ -1,12 +1,12 @@
 package com.khu.cloudcomputing.khuropbox.stt.auth;
 
+import com.khu.cloudcomputing.khuropbox.apiPayload.GeneralException;
+import com.khu.cloudcomputing.khuropbox.apiPayload.status.ErrorStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.configurationprocessor.json.JSONException;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,8 +15,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Scanner;
 
 @Service
@@ -26,18 +24,27 @@ public class ReturnzeroAuthService {
     private final String clientSecret;
     private final String Auth_URL;
 
-    private AuthTokenRepository authTokenRepository;
+    private final AuthTokenRepository authTokenRepository;
 
-    public ReturnzeroAuthService(@Value("${returnzero.clientid}")String clientId,@Value("${returnzero.clientSecret}") String clientSecret, @Value("${returnzero.authUrl}") String auth_URL) {
+    public ReturnzeroAuthService(@Value("${returnzero.clientid}") String clientId, @Value("${returnzero.clientSecret}") String clientSecret, @Value("${returnzero.authUrl}") String auth_URL, AuthTokenRepository authTokenRepository) {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.Auth_URL = auth_URL;
+        this.authTokenRepository = authTokenRepository;
     }
 
-    public void retrieveAndStoreToken() throws IOException, JSONException {
-        HttpURLConnection httpConn = setupConnection();
-        String response = sendRequest(httpConn);
-        storeToken(response);
+    // 비동기적으로 토큰을 요청하고 저장하는 메서드
+    public Mono<Void> retrieveAndStoreToken() {
+        return Mono.defer(() -> {
+            try {
+                HttpURLConnection httpConn = setupConnection();
+                String response = sendRequest(httpConn);
+                storeToken(response);
+                return Mono.empty();
+            } catch (IOException | JSONException e) {
+                return Mono.error(new GeneralException(ErrorStatus._INTERNAL_SERVER_ERROR.getCode(), "Failed to retrieve and store token", ErrorStatus._INTERNAL_SERVER_ERROR.getHttpStatus()));
+            }
+        });
     }
 
     private HttpURLConnection setupConnection() throws IOException {
@@ -83,14 +90,16 @@ public class ReturnzeroAuthService {
         authTokenRepository.save(tokenStorage);
     }
 
-
-    public synchronized String checkValidToken() throws IOException, JSONException {
-        AuthTokenEntity token = getToken();
-        if (token == null || token.getExpiresAt().isBefore(Instant.now())) {  // 여유 시간을 두고 갱신
-            retrieveAndStoreToken();
-            token = getToken();  // 갱신된 토큰 가져오기
-        }
-        return token.getAccessToken();
+    // 비동기적으로 토큰을 확인하고 필요하면 갱신하는 메서드
+    public Mono<String> checkValidToken() {
+        return Mono.defer(() -> {
+                    AuthTokenEntity token = getToken();
+                    if (token == null || token.getExpiresAt().isBefore(Instant.now())) {
+                        return retrieveAndStoreToken().then(Mono.fromCallable(() -> getToken().getAccessToken()));
+                    }
+                    return Mono.just(token.getAccessToken());
+                }).onErrorMap(IOException.class, e -> new GeneralException(ErrorStatus._INTERNAL_SERVER_ERROR.getCode(), "Failed to check valid token", ErrorStatus._INTERNAL_SERVER_ERROR.getHttpStatus()))
+                .onErrorMap(JSONException.class, e -> new GeneralException(ErrorStatus._INTERNAL_SERVER_ERROR.getCode(), "Failed to parse token response", ErrorStatus._INTERNAL_SERVER_ERROR.getHttpStatus()));
     }
 
     private AuthTokenEntity getToken() {

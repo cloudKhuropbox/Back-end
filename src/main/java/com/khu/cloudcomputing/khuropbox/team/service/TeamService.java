@@ -5,6 +5,7 @@ import com.khu.cloudcomputing.khuropbox.team.dto.InsertTeamDTO;
 import com.khu.cloudcomputing.khuropbox.team.dto.TeamDTO;
 import com.khu.cloudcomputing.khuropbox.team.dto.TeamRoleDTO;
 import com.khu.cloudcomputing.khuropbox.team.dto.UserRoleDTO;
+import com.khu.cloudcomputing.khuropbox.team.entity.Role;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -50,8 +51,8 @@ public interface TeamService {
      * @param teamId 팀 ID
      * @return 사용자 엔티티
      */
-    String findUserRole(String userId, Integer teamId);
-    void updateRole(Integer teamId, String userName, String role);
+    Role findUserRole(String userId, Integer teamId);
+    void updateRole(Integer teamId, String userName, Role role);
     /**
      * 팀에서 특정 사용자를 삭제합니다.
      *

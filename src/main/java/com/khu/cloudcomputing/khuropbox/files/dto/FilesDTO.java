@@ -2,9 +2,12 @@ package com.khu.cloudcomputing.khuropbox.files.dto;
 
 import com.khu.cloudcomputing.khuropbox.auth.model.UserEntity;
 import com.khu.cloudcomputing.khuropbox.files.entity.Files;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 
@@ -13,12 +16,20 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class FilesDTO {
     private Integer id;
+    @NotBlank
     private String fileName;
+    @NotBlank
     private String fileLink;
+    @NotNull
     private Long fileSize;
     private String fileType;
+    @NotNull
+    @DateTimeFormat(pattern="yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
+    @NotNull
+    @DateTimeFormat(pattern="yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime updatedAt;
+    @NotNull
     private UserEntity owner;
     private Integer teamId;
     private Boolean isRecycleBin;

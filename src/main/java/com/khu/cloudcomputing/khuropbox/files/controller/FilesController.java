@@ -10,6 +10,7 @@ import com.khu.cloudcomputing.khuropbox.files.dto.FileMultipartUploadUrlDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesDTO;
 import com.khu.cloudcomputing.khuropbox.files.dto.FilesUpdateDTO;
 import com.khu.cloudcomputing.khuropbox.files.service.FilesService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -72,7 +73,7 @@ public class FilesController {
             @RequestParam String key,
             @RequestParam String uploadId,
             @RequestBody List<CompletedPart> parts,
-            @RequestBody FilesDTO filesDTO) {
+            @Valid @RequestBody FilesDTO filesDTO) {
         CompleteMultipartUploadResponse response = awsService.completeMultipartUpload(key, uploadId, parts);
         filesService.insertFile(filesDTO);
         return ResponseEntity.ok(response);
@@ -98,7 +99,7 @@ public class FilesController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(HttpStatus.FORBIDDEN, "Forbidden", null));
     }
     @PostMapping("update")
-    public ResponseEntity<ApiResponse<String>> Update(@RequestBody FilesUpdateDTO fileUpdate) {
+    public ResponseEntity<ApiResponse<String>> Update(@Valid @RequestBody FilesUpdateDTO fileUpdate) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String id = authentication.getName();
         FilesDTO file = filesService.findById(fileUpdate.getId());

@@ -17,10 +17,9 @@ import jakarta.persistence.*;
 public class ScriptEntity {
     @Id
     private Integer fileId;
-
-    private String requestId;
-
+    private String transcribeId;
     @OneToOne(fetch = FetchType.LAZY)
+
     @JoinColumn(name = "file_id")
     private Files file;
 
