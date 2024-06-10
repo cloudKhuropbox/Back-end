@@ -107,6 +107,9 @@ public class FilesServiceImpl implements FilesService {
         Files file = this.filesRepository.findById(fileUpdate.getId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus._FILE_NOT_FOUND.getCode(), "File not found", HttpStatus.NOT_FOUND));
         file.update(fileUpdate.getFileName(), LocalDateTime.now(), fileUpdate.getTeamId());
+        if(fileUpdate.getFileKey()!=null) {
+            file.updateKey(fileUpdate.getFileKey());
+        }
         this.filesRepository.save(file);
         FileHistoryEntity fileHistory = new FileHistoryEntity();
         fileHistory.updateFileHistory(file, fileUpdate.getChangeDescription());

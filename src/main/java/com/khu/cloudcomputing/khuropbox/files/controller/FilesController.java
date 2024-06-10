@@ -5,10 +5,7 @@ import com.khu.cloudcomputing.khuropbox.apiPayload.ApiResponse;
 import com.khu.cloudcomputing.khuropbox.apiPayload.status.SuccessStatus;
 import com.khu.cloudcomputing.khuropbox.auth.persistence.UserRepository;
 import com.khu.cloudcomputing.khuropbox.configuration.aws.AwsService;
-import com.khu.cloudcomputing.khuropbox.files.dto.FileHistoryDTO;
-import com.khu.cloudcomputing.khuropbox.files.dto.FileMultipartUploadUrlDTO;
-import com.khu.cloudcomputing.khuropbox.files.dto.FilesDTO;
-import com.khu.cloudcomputing.khuropbox.files.dto.FilesUpdateDTO;
+import com.khu.cloudcomputing.khuropbox.files.dto.*;
 import com.khu.cloudcomputing.khuropbox.files.service.FilesService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +23,9 @@ import software.amazon.awssdk.services.s3.model.CompletedPart;
 import java.io.IOException;
 import java.net.URL;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -60,8 +59,8 @@ public class FilesController {
     }
     @PostMapping("/start-upload")
     public ResponseEntity<List<FileMultipartUploadUrlDTO>> startMultipartUpload(
-            @RequestParam String key,
-            @RequestParam long fileSize) {
+            @RequestParam(value = "key") String key,
+            @RequestParam(value = "fileSize") long fileSize) {
         int partCount = awsService.calculateMultipartCount(fileSize, 10);
         String uploadId = awsService.createMultipartUpload(key).uploadId();
         List<FileMultipartUploadUrlDTO> presignedUrls = awsService.generateWriteOnlyMultipartPresignedUrls(
@@ -70,11 +69,16 @@ public class FilesController {
     }
     @PostMapping("/complete-upload")
     public ResponseEntity<CompleteMultipartUploadResponse> completeMultipartUpload(
-            @RequestParam String key,
-            @RequestParam String uploadId,
-            @RequestBody List<CompletedPart> parts,
-            @Valid @RequestBody FilesDTO filesDTO) {
-        CompleteMultipartUploadResponse response = awsService.completeMultipartUpload(key, uploadId, parts);
+            @RequestParam(value="key") String key,
+            @RequestParam(value="uploadId") String uploadId,
+            @RequestBody FilesDTO filesDTO) {
+        List<PartsDTO> parts=filesDTO.getParts();
+        List<CompletedPart> cParts=new ArrayList<>();
+        for (PartsDTO part:parts) {
+            CompletedPart cPart = CompletedPart.builder().partNumber(part.getPartNum()).eTag(part.getETag()).build();
+            cParts.add(cPart);
+        }
+        CompleteMultipartUploadResponse response = awsService.completeMultipartUpload(key, uploadId, cParts);
         filesService.insertFile(filesDTO);
         return ResponseEntity.ok(response);
     }
@@ -137,8 +141,8 @@ public class FilesController {
         String id = authentication.getName();
         FilesDTO file = filesService.findById(fileId);
         if (id.equals(file.getOwner().getId())) {
-            String filePath = file.getFileKey();
-            filesService.deleteAtS3(filePath);
+            String fileKey = file.getFileKey();
+            filesService.deleteAtS3(fileKey);
             filesService.deleteFile(fileId);
             return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._FILE_DELETED));
         }
@@ -146,7 +150,7 @@ public class FilesController {
     }
 
     @GetMapping("fileHistory/{fileId}")
-    public ResponseEntity<ApiResponse<List<FileHistoryDTO>>> getFileChangeHistory(@PathVariable Integer fileId) {
+    public ResponseEntity<ApiResponse<List<FileHistoryDTO>>> getFileChangeHistory(@PathVariable(value="fileId") Integer fileId) {
         List<FileHistoryDTO> changeHistory = filesService.getFileChangeHistory(fileId);
         return ResponseEntity.ok(new ApiResponse<>(SuccessStatus._OK, changeHistory));
     }

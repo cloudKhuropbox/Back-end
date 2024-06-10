@@ -14,7 +14,7 @@ public class FilesUpdateDTO {
     @NotNull
     private Integer id;
     private String fileName;
-    private String fileLink;
+    private String fileKey;
     private Integer teamId;
     private String changeDescription;
 }

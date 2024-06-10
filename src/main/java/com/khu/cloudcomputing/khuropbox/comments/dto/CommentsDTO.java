@@ -16,13 +16,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class CommentsDTO {//댓글 입력시에만 사용
     private Integer id;
-    @NotNull
     private UserEntity user;
     @NotNull
     private Integer fileId;
     @NotBlank
     private String comment;
-    @NotNull
     @DateTimeFormat(pattern="yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
     private Boolean updated;

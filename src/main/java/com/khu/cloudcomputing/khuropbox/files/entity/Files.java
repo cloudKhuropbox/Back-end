@@ -42,23 +42,19 @@ public class Files {
     private Integer teamId;
     private Boolean isRecycleBin;
 
-    public Files update(String fileName, LocalDateTime updatedAt, Integer teamId){
+    public void update(String fileName, LocalDateTime updatedAt, Integer teamId){
         this.fileName=fileName;
         this.updatedAt=updatedAt;
         this.teamId=teamId;
-        return this;
     }
-    public Files recycleBin(){
+    public void recycleBin(){
         this.isRecycleBin=true;
-        return this;
     }
-    public Files restore(){
+    public void restore(){
         this.isRecycleBin=false;
-        return this;
     }
-    public Files updateKey(String fileKey){
+    public void updateKey(String fileKey){
         this.fileKey=fileKey;
-        return this;
     }
 
     @OneToMany(mappedBy = "file", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
