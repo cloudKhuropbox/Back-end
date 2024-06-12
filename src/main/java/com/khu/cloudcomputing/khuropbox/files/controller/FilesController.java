@@ -71,17 +71,29 @@ public class FilesController {
     public ResponseEntity<CompleteMultipartUploadResponse> completeMultipartUpload(
             @RequestParam(value="key") String key,
             @RequestParam(value="uploadId") String uploadId,
-            @RequestBody FilesDTO filesDTO) {
-        List<PartsDTO> parts=filesDTO.getParts();
-        List<CompletedPart> cParts=new ArrayList<>();
-        for (PartsDTO part:parts) {
-            CompletedPart cPart = CompletedPart.builder().partNumber(part.getPartNum()).eTag(part.getETag()).build();
-            cParts.add(cPart);
+            @Valid @RequestBody FilesDTO filesDTO) {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String id = authentication.getName();
+            List<PartsDTO> parts = filesDTO.getParts();
+            List<CompletedPart> cParts = new ArrayList<>();
+            try {
+                for (PartsDTO part : parts) {
+                    log.info(String.valueOf(part.getPartNum()));
+                    log.info(part.getETag());
+                    CompletedPart cPart = CompletedPart.builder().partNumber(part.getPartNum()).eTag(part.getETag()).build();
+                    cParts.add(cPart);
+                }
+                CompleteMultipartUploadResponse response = awsService.completeMultipartUpload(key, uploadId, cParts);
+                filesDTO.setFileKey(id+'/'+filesDTO.getFileKey());
+                filesDTO.setOwner(userRepository.findAllById(id).orElseThrow());
+                filesService.insertFile(filesDTO);
+                return ResponseEntity.ok(response);
+            }
+            catch(Exception e){
+                log.info(e.getMessage());
+                return ResponseEntity.badRequest().build();
+            }
         }
-        CompleteMultipartUploadResponse response = awsService.completeMultipartUpload(key, uploadId, cParts);
-        filesService.insertFile(filesDTO);
-        return ResponseEntity.ok(response);
-    }
     @PostMapping("/abort-upload")
     public ResponseEntity<AbortMultipartUploadResponse> abortUpload(
             @RequestParam String key,

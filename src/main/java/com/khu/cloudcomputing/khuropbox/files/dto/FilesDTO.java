@@ -58,6 +58,7 @@ public class FilesDTO {
                 .updatedAt(updatedAt)
                 .owner(owner)
                 .teamId(teamId)
+                .isRecycleBin(isRecycleBin)
                 .build();
     }
 }

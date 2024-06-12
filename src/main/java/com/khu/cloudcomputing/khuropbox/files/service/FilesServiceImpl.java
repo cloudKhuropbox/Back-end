@@ -159,6 +159,7 @@ public class FilesServiceImpl implements FilesService {
         LocalDateTime now=LocalDateTime.now();
         file.setCreatedAt(now);
         file.setUpdatedAt(now);
+        file.setIsRecycleBin(false);
         return filesRepository.save(file.toEntity()).getId();
     }
 

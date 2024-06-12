@@ -26,7 +26,6 @@ public class Files {
     @NotNull
     private String fileKey;
     @NotNull
-    @Size(min=0)
     private Long fileSize;
     private String fileType;
     @NotNull
@@ -37,7 +36,6 @@ public class Files {
     private LocalDateTime updatedAt;
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "userId")
-    @NotNull
     private UserEntity owner;
     private Integer teamId;
     private Boolean isRecycleBin;
