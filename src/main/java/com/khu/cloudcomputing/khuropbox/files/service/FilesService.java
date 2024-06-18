@@ -29,7 +29,7 @@ public interface FilesService{
     List<FileHistoryDTO> getFileChangeHistory(Integer id);
     FileHistoryDTO mapToDTO(Files fileEntity, FileHistoryEntity fileHistoryEntity);
 
-
+    Boolean isExistFileKey(String userId, String fileKey);
     //디렉토리 생성, 파일 이동
     public void createDirectory(String currentDit, String newDirName);
     public void moveFile(String source, String target) throws IOException;

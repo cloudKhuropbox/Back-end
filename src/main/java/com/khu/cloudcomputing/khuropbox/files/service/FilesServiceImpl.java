@@ -179,6 +179,12 @@ public class FilesServiceImpl implements FilesService {
     }
 
     @Override
+    public Boolean isExistFileKey(String userId, String fileKey){
+        List<String> fileKeyList=filesRepository.findFileKey(userId);
+        return fileKeyList.contains(fileKey);
+    }
+
+    @Override
     public void createDirectory(String currentDir, String newDirName) {
         try {
             // Ensure the parent directory path ends with a slash

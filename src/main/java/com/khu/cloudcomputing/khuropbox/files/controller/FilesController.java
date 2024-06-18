@@ -1,7 +1,7 @@
 package com.khu.cloudcomputing.khuropbox.files.controller;
 
-import com.amazonaws.Request;
 import com.khu.cloudcomputing.khuropbox.apiPayload.ApiResponse;
+import com.khu.cloudcomputing.khuropbox.apiPayload.status.ErrorStatus;
 import com.khu.cloudcomputing.khuropbox.apiPayload.status.SuccessStatus;
 import com.khu.cloudcomputing.khuropbox.auth.persistence.UserRepository;
 import com.khu.cloudcomputing.khuropbox.configuration.aws.AwsService;
@@ -25,7 +25,6 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -58,10 +57,17 @@ public class FilesController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(HttpStatus.FORBIDDEN, "Forbidden", null));
     }
     @PostMapping("/start-upload")
-    public ResponseEntity<List<FileMultipartUploadUrlDTO>> startMultipartUpload(
+    public ResponseEntity<?> startMultipartUpload(
             @RequestParam(value = "key") String key,
             @RequestParam(value = "fileSize") long fileSize) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String id = authentication.getName();
         int partCount = awsService.calculateMultipartCount(fileSize, 10);
+        key=id+'/'+key;
+        if(filesService.isExistFileKey(id, key)){
+            return ResponseEntity.status(ErrorStatus._FILE_KEY_EXISTS.getHttpStatus())
+                    .body(key);
+        }
         String uploadId = awsService.createMultipartUpload(key).uploadId();
         List<FileMultipartUploadUrlDTO> presignedUrls = awsService.generateWriteOnlyMultipartPresignedUrls(
                 key, Duration.ofMinutes(60), uploadId, partCount);
@@ -181,3 +187,4 @@ public class FilesController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ApiResponse<>(HttpStatus.FORBIDDEN, "Forbidden", null));
     }
 }
+

@@ -23,7 +23,8 @@ public enum ErrorStatus {
     _USER_ALREADY_IN_TEAM("E013", "User already in team", HttpStatus.BAD_REQUEST),
     _UNSUPPORTED_MEDIA_TYPE("E014", "Unsupported media type", HttpStatus.UNSUPPORTED_MEDIA_TYPE),
     _TRANSCRIBE_REQUEST_FAILED("E015", "Transcription request failed", HttpStatus.INTERNAL_SERVER_ERROR),
-    _TRANSCRIBE_POLLING_FAILED("E016", "Transcription polling failed", HttpStatus.INTERNAL_SERVER_ERROR);
+    _TRANSCRIBE_POLLING_FAILED("E016", "Transcription polling failed", HttpStatus.INTERNAL_SERVER_ERROR),
+    _FILE_KEY_EXISTS("E017", "FileKey already exists", HttpStatus.CONFLICT);
 
     private final String code;
     private final String message;
