@@ -1,6 +1,7 @@
 package com.khu.cloudcomputing.khuropbox.stt.auth;
 
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
@@ -14,6 +15,7 @@ public class AuthTokenEntity {
     @Id
     private Long id = 1L;
 
+    @Column(length=1024)
     private String accessToken;
     private Instant expiresAt;
 

@@ -40,7 +40,7 @@ public class SttService {
         this.sttRepository = sttRepository;
     }
 
-    private static final List<String> SUPPORTED_FORMATS = Arrays.asList("mp4", "m4a", "mp3", "amr", "flac", "wav");
+    private static final List<String> SUPPORTED_FORMATS = Arrays.asList(".mp4", ".m4a", ".mp3", ".amr", ".flac", ".wav");
 
     public Mono<byte[]> getFileData(Integer fileId) {
         Files file = filesRepository.findById(fileId)

@@ -120,7 +120,7 @@ public class TeamServiceImpl implements TeamService {
     }
     @Override
     public void updateRole(Integer teamId, String userName, Role role){
-        if(role.equals(Role.admin) || role.equals(Role.owner))
+        if(role.equals(Role.admin) || role.equals(Role.customer))
             userTeamRepository.updateRole(teamId, userName, role);
     }
     /**

@@ -89,8 +89,9 @@ public class FilesController {
                     CompletedPart cPart = CompletedPart.builder().partNumber(part.getPartNum()).eTag(part.getETag()).build();
                     cParts.add(cPart);
                 }
+                key=id+'/'+key;
                 CompleteMultipartUploadResponse response = awsService.completeMultipartUpload(key, uploadId, cParts);
-                filesDTO.setFileKey(id+'/'+filesDTO.getFileKey());
+                filesDTO.setFileKey(key);
                 filesDTO.setOwner(userRepository.findAllById(id).orElseThrow());
                 filesService.insertFile(filesDTO);
                 return ResponseEntity.ok(response);
