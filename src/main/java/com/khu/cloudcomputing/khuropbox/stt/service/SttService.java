@@ -12,14 +12,16 @@ import com.khu.cloudcomputing.khuropbox.stt.repository.SttRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -78,13 +80,15 @@ public class SttService {
 
     // 비동기적으로 토큰을 확인한 후에 요청을 보내도록 수정
     public Mono<TranscribeResponseDTO> sendPostRequest(SttRequestDTO sttRequestDTO) {
+        MultiValueMap<String, Object> body=new LinkedMultiValueMap<>();
+        body.add("file",sttRequestDTO.getFile());
         return returnzeroAuthService.checkValidToken()
                 .flatMap(token -> webClient.post()
                         .uri(url)
                         .accept(MediaType.APPLICATION_JSON)
-                        .header("Authorization", token)
+                        .header("Authorization", "Bearer "+token)
                         .contentType(MediaType.MULTIPART_FORM_DATA)
-                        .bodyValue(sttRequestDTO)
+                        .body(BodyInserters.fromMultipartData(body))
                         .retrieve()
                         .bodyToMono(TranscribeResponseDTO.class)
                         .onErrorMap(IOException.class, e -> new GeneralException(ErrorStatus._TRANSCRIBE_REQUEST_FAILED.getCode(), "Error sending post request", ErrorStatus._TRANSCRIBE_REQUEST_FAILED.getHttpStatus()))

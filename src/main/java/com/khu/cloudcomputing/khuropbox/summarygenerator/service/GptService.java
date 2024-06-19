@@ -40,6 +40,7 @@ public class GptService {
         return Mono.fromCallable(() -> filesRepository.findById(fileId).orElseThrow(() -> new IllegalArgumentException("File not found")))
                 .flatMap(file -> awsService.readFileAsString(file.getFileKey())
                         .flatMap(script -> {
+
                             String prompt = "Summarize the following meeting transcript, including main topics, detailed agenda items, and conclusions:\n\n" + script;
                             GptRequestDTO requestDTO = GptRequestDTO.builder()
                                     .model(model)
@@ -49,10 +50,12 @@ public class GptService {
                                     .frequencyPenalty(0.1f)
                                     .presencePenalty(0.1f)
                                     .build();
+
                             return sendGptRequest(requestDTO)
                                     .flatMap(responseDTO -> {
                                         String summary = responseDTO.getMessage().getContent();
                                         String fileName = UUID.randomUUID() + ".txt";
+
                                         return awsService.uploadFile(fileName, summary.getBytes(StandardCharsets.UTF_8))
                                                 .flatMap(s3Key -> saveSummaryToDatabase(file, s3Key))
                                                 .thenReturn(responseDTO);

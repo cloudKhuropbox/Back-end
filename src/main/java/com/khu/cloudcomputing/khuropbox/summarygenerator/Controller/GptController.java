@@ -21,7 +21,7 @@ public class GptController{
     }
 
     @GetMapping("/summarize")
-    public Mono<ResponseEntity<GptResponseDTO>> summarizeText(@RequestParam Integer fileId) {
+    public Mono<ResponseEntity<GptResponseDTO>> summarizeText(@RequestParam(value = "fileId") Integer fileId) {
         return gptService.summarizeScript(model, fileId)
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());

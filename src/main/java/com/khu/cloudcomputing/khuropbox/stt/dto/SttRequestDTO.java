@@ -1,7 +1,7 @@
 package com.khu.cloudcomputing.khuropbox.stt.dto;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
+import org.apache.http.client.config.RequestConfig;
 import reactor.core.publisher.Mono;
 
 import java.util.concurrent.CompletableFuture;

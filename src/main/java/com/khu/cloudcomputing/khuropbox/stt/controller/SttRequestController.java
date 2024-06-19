@@ -28,7 +28,7 @@ public class SttRequestController {
 
 
     @PostMapping("/{fileId}")
-    public Mono<ResponseEntity<String>> transcribeFile(@PathVariable Integer fileId, @RequestParam int speakerCount) {
+    public Mono<ResponseEntity<String>> transcribeFile(@PathVariable(value="fileId") Integer fileId, @RequestParam(value="speakerCount") int speakerCount) {
         return sttService.transcribe(fileId, speakerCount)
                 .map(response -> {
                     ScriptEntity scriptEntity = new ScriptEntity();
@@ -43,7 +43,7 @@ public class SttRequestController {
                 });
     }
 
-    @Scheduled(fixedDelay = 5000)
+    @Scheduled(fixedDelay = 10)
     public void pollTranscriptionResults() {
         Iterable<ScriptEntity> scripts = sttRepository.findAll();
         scripts.forEach(script -> {
